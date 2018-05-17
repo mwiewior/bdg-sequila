@@ -43,12 +43,14 @@ libraryDependencies += "com.github.potix2" %% "spark-google-spreadsheets" % "0.5
 libraryDependencies += "ch.cern.sparkmeasure" %% "spark-measure" % "0.11"
 
 //fork := true
-fork in Test := true
-parallelExecution in Test := false
+fork in Test := false
+//parallelExecution in Test := false
 javaOptions in test += "-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=9999"
-javaOptions in run ++= Seq(
-  "-Dlog4j.debug=true",
-  "-Dlog4j.configuration=log4j.properties")
+javaOptions in run += "-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=9999"
+
+//javaOptions in run ++= Seq(
+//  "-Dlog4j.debug=true",
+//  "-Dlog4j.configuration=log4j.properties")
 
 javaOptions ++= Seq("-Xms512M", "-Xmx8192M", "-XX:+CMSClassUnloadingEnabled")
 
