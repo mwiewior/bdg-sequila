@@ -42,6 +42,8 @@ libraryDependencies += "com.github.potix2" %% "spark-google-spreadsheets" % "0.5
 
 libraryDependencies += "ch.cern.sparkmeasure" %% "spark-measure" % "0.11"
 
+//libraryDependencies += "pl.edu.pw.ii.zsibio" % "common-routines_2.11" % "0.1-SNAPSHOT"
+
 //fork := true
 fork in Test := false
 //parallelExecution in Test := false
