@@ -44,8 +44,8 @@ libraryDependencies += "ch.cern.sparkmeasure" %% "spark-measure" % "0.11"
 
 //libraryDependencies += "pl.edu.pw.ii.zsibio" % "common-routines_2.11" % "0.1-SNAPSHOT"
 
-//fork := true
-fork in Test := false
+fork := false
+fork in Test := true
 //parallelExecution in Test := false
 javaOptions in test += "-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=9999"
 javaOptions in run += "-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=9999"

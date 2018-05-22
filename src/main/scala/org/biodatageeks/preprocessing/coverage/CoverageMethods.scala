@@ -1,8 +1,9 @@
 package org.biodatageeks.preprocessing.coverage
 
 import htsjdk.samtools.{Cigar, CigarOperator, SAMUtils, TextCigarCodec}
-import htsjdk.samtools.util.CigarUtil
+
 import org.apache.spark.rdd.RDD
+
 import org.apache.spark.storage.StorageLevel
 import org.biodatageeks.datasources.BAM.BAMRecord
 
@@ -20,9 +21,7 @@ case class PartitionCoverage(covMap: mutable.HashMap[(String, Int), Array[Int]],
                              outputSize: Int,
                              chrMinMax: Array[(String,Int)] )
 
-object CoverageMethods {
 
-}
 
 class CoverageReadFunctions(covReadRDD:RDD[BAMRecord]) extends Serializable {
 
@@ -132,3 +131,12 @@ class CoverageReadFunctions(covReadRDD:RDD[BAMRecord]) extends Serializable {
 
   }
 }
+
+object CoverageReadFunctions {
+
+  implicit def addCoverageReadFunctions(rdd: RDD[BAMRecord]) = {
+    new CoverageReadFunctions(rdd)
+
+  }
+}
+

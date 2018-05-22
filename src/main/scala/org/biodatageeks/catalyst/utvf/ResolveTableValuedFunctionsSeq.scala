@@ -21,12 +21,14 @@ package org.apache.spark.sql
 
 import java.util.Locale
 
-import org.apache.spark.sql.SparkSession
-import org.apache.spark.sql.catalyst.analysis.{TypeCoercion, UnresolvedTableValuedFunction}
-import org.apache.spark.sql.catalyst.expressions.{Alias, Expression}
-import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Project, Range}
+
+import org.apache.spark.sql.catalyst.analysis.{MultiInstanceRelation, TypeCoercion, UnresolvedTableValuedFunction}
+import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, Expression}
+import org.apache.spark.sql.catalyst.plans.logical._
 import org.apache.spark.sql.catalyst.rules._
-import org.apache.spark.sql.types.{DataType, IntegerType, LongType}
+import org.apache.spark.sql.internal.SQLConf
+import org.apache.spark.sql.types._
+
 
 /**
   * Rule that resolves table-valued function references.
@@ -83,27 +85,14 @@ object ResolveTableValuedFunctionsSeq extends Rule[LogicalPlan] {
     */
   private val builtinFunctions: Map[String, TVF] = Map(
     "coverage" -> Map(
+      /* coverage(tableName) */
+      tvf("dummy"->LongType, "table" -> StringType) { case Seq(dummy:Long,table: String) =>
+        Coverage(table)
+      }),
+    "range" -> Map(
       /* range(end) */
       tvf("end" -> LongType) { case Seq(end: Long) =>
         Range(0, end, 1, None)
-      },
-
-      /* range(start, end) */
-      tvf("start" -> LongType, "end" -> LongType) { case Seq(start: Long, end: Long) =>
-        Range(start, end, 1, None)
-      },
-
-      /* range(start, end, step) */
-      tvf("start" -> LongType, "end" -> LongType, "step" -> LongType) {
-        case Seq(start: Long, end: Long, step: Long) =>
-          Range(start, end, step, None)
-      },
-
-      /* range(start, end, step, numPartitions) */
-      tvf("start" -> LongType, "end" -> LongType, "step" -> LongType,
-        "numPartitions" -> IntegerType) {
-        case Seq(start: Long, end: Long, step: Long, numPartitions: Int) =>
-          Range(start, end, step, Some(numPartitions))
       })
   )
 
@@ -146,5 +135,40 @@ object ResolveTableValuedFunctionsSeq extends Rule[LogicalPlan] {
       } else {
         resolvedFunc
       }
+  }
+}
+
+/** Factory for constructing new `Coverage` nodes. */
+object Coverage {
+  def apply(tableName:String): Coverage = {
+    val output = StructType(StructField("id", LongType, nullable = false) :: Nil).toAttributes
+    new Coverage(tableName:String,output)
+  }
+//  def apply(tableName:String): Coverage = {
+//    Coverage(tableName:String)
+//  }
+}
+
+case class Coverage(tableName:String,
+                    output: Seq[Attribute])
+  extends LeafNode with MultiInstanceRelation {
+
+
+  val numElements: BigInt = 1
+
+  def toSQL(): String = {
+
+    s"SELECT id AS `${output.head.name}` FROM coverage($tableName)"
+  }
+
+  override def newInstance(): Coverage = copy(output = output.map(_.newInstance()))
+
+  override def computeStats(conf: SQLConf): Statistics = {
+    val sizeInBytes = LongType.defaultSize * numElements
+    Statistics( sizeInBytes = sizeInBytes )
+  }
+
+  override def simpleString: String = {
+    s"Coverage ($tableName)"
   }
 }

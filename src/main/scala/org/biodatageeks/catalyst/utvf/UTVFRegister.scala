@@ -70,7 +70,7 @@ object UTVFRegister {
     //val context: SparkContext = new SparkContext(conf)
     val session: SparkSession = MySparkSession(spark)
     session.sparkContext.setLogLevel("INFO")
-    println(session.sql("select * from coverage(1,2)").show())
+    println(session.sql("select * from coverage(0,'test')").explain(true))
   }
 
 }
