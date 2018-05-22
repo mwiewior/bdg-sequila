@@ -41,19 +41,13 @@ class CoverageTestSuite extends FunSuite with DataFrameSuiteBase with BeforeAndA
       """.stripMargin)
 
     }
-  test("BAM - coverage"){
+  test("BAM - coverage table-valued function"){
     val session: SparkSession = MySparkSession(spark)
-  // session.sparkContext.setLogLevel("INFO")
-//    session.sql("select * from range(1)").explain()
+
     session.experimental.extraStrategies = new CoverageStrategy(session) :: Nil
-    val query = s"select * from coverage('${tableNameBAM}')  order by coverage desc"
-    //session.sql(query).show(5)
-    session.sql(query).explain(true)
-    session.experimental.extraStrategies = new CoverageStrategy(session) :: Nil
-    session.sql(query).show(5)
-    session.experimental.extraStrategies = new CoverageStrategy(session) :: Nil
-    session.sql(query).show(5)
-    //session.sql(query).explain(true)
+
+    assert(session.sql(s"select * from coverage('${tableNameBAM}') where position=20204").first().getInt(3)===1019)
+
   }
 
 }
