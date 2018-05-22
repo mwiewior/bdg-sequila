@@ -258,3 +258,46 @@ Parameter is set via coniguration:
    spark.sqlContext.setConf("spark.biodatageeks.rangejoin.useJoinOrder", "true")
 
 
+Coverage
+##########
+
+In order to compute coverage for your sample you can run a set of queries as follows:
+
+::
+
+    spark.sql(
+            s"""
+               |CREATE TABLE ${tableNameBAM}
+               |USING org.biodatageeks.datasources.BAM.BAMDataSource
+               |OPTIONS(path "${bamPath}")
+               |
+          """.stripMargin)
+    spark.sql(s"SELECT * FROM coverage('${tableNameBAM}').show(5)
+
+    +--------+----------+--------+--------+
+    |sampleId|contigName|position|coverage|
+    +--------+----------+--------+--------+
+    | NA12878|      chr1|     137|       1|
+    | NA12878|      chr1|     138|       1|
+    | NA12878|      chr1|     139|       1|
+    | NA12878|      chr1|     140|       1|
+    | NA12878|      chr1|     141|       1|
+    +--------+----------+--------+--------+
+
+If you would like to do additional short reads prefiltering, you can create a temporary table and use it as an input to the coverage function, e.g.:
+
+::
+
+    spark.sql(s"CREATE TABLE filtered_reads AS SELECT * FROM ${tableNameBAM} WHERE mapq > 10 AND start> 200")
+    spark.sql(s"SELECT * FROM coverage('filtered_reads')").show(5)
+
+    +--------+----------+--------+--------+
+    |sampleId|contigName|position|coverage|
+    +--------+----------+--------+--------+
+    | NA12878|      chr1|     361|       1|
+    | NA12878|      chr1|     362|       1|
+    | NA12878|      chr1|     363|       1|
+    | NA12878|      chr1|     364|       1|
+    | NA12878|      chr1|     365|       1|
+    +--------+----------+--------+--------+
+

@@ -31,9 +31,13 @@ case class CoveragePlan(plan: LogicalPlan, spark: SparkSession, table:String, ou
     val schema = plan.schema
     val cov = ds.rdd.baseCoverage(None,Some(4),sorted=false)
       cov
-      .map(r=>  UnsafeProjection.create(schema).apply(InternalRow.fromSeq(Seq(UTF8String.fromString(r.sampleId),
-        UTF8String.fromString(r.chr),r.position,r.coverage))))
+      .mapPartitions(p=>{
+       val proj =  UnsafeProjection.create(schema)
+       p.map(r=>   proj.apply(InternalRow.fromSeq(Seq(UTF8String.fromString(r.sampleId),
+          UTF8String.fromString(r.chr),r.position,r.coverage))))
+      })
   }
+
 
   def children: Seq[SparkPlan] = Nil
 }

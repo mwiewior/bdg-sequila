@@ -45,8 +45,12 @@ class CoverageTestSuite extends FunSuite with DataFrameSuiteBase with BeforeAndA
     val session: SparkSession = MySparkSession(spark)
 
     session.experimental.extraStrategies = new CoverageStrategy(session) :: Nil
-
-    assert(session.sql(s"select * from coverage('${tableNameBAM}') where position=20204").first().getInt(3)===1019)
+    //session.sparkContext.setLogLevel("INFO")
+    assert(session.sql(s"SELECT * FROM coverage('${tableNameBAM}') WHERE position=20204").first().getInt(3)===1019)
+    session.experimental.extraStrategies = new CoverageStrategy(session) :: Nil
+    session.sql(s"CREATE TABLE filtered_reads AS SELECT * FROM ${tableNameBAM} WHERE mapq > 10 AND start> 200")
+    session.experimental.extraStrategies = new CoverageStrategy(session) :: Nil
+    session.sql(s"SELECT * FROM coverage('filtered_reads')").show(5)
 
   }
 

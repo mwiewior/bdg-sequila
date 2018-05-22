@@ -16,6 +16,8 @@ case class CoverageRecord(sampleId:String,
                               position:Int,
                               coverage:Int)
 
+
+
 case class PartitionCoverage(covMap: mutable.HashMap[(String, Int), Array[Int]],
                              maxCigarLength: Int,
                              outputSize: Int,
