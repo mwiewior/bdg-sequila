@@ -6,6 +6,7 @@ import com.holdenkarau.spark.testing.{DataFrameSuiteBase, SharedSparkContext}
 import org.apache.spark.sql.{MySparkSession, SparkSession}
 import org.bdgenomics.utils.instrumentation.{Metrics, MetricsListener, RecordedMetrics}
 import org.biodatageeks.datasources.BAM.BAMRecord
+import org.biodatageeks.preprocessing.coverage.CoverageStrategy
 import org.scalatest.{BeforeAndAfter, FunSuite}
 
 class CoverageTestSuite extends FunSuite with DataFrameSuiteBase with BeforeAndAfter with SharedSparkContext{
@@ -44,8 +45,8 @@ class CoverageTestSuite extends FunSuite with DataFrameSuiteBase with BeforeAndA
     val session: SparkSession = MySparkSession(spark)
     session.sparkContext.setLogLevel("INFO")
     session.sql("select * from range(1)").explain()
-
-    session.sql(s"select * from coverage(0,'marek')").explain()
+    session.experimental.extraStrategies = new CoverageStrategy(session) :: Nil
+    session.sql(s"select * from coverage('${tableNameBAM}')").show()
   }
 
 }

@@ -2,7 +2,7 @@ import scala.util.Properties
 
 name := """bdg-sequila"""
 
-version := "0.3"
+version := "0.4-SNAPSHOT"
 
 organization := "org.biodatageeks"
 
@@ -44,7 +44,7 @@ libraryDependencies += "ch.cern.sparkmeasure" %% "spark-measure" % "0.11"
 
 //libraryDependencies += "pl.edu.pw.ii.zsibio" % "common-routines_2.11" % "0.1-SNAPSHOT"
 
-fork := false
+fork := true
 fork in Test := true
 //parallelExecution in Test := false
 javaOptions in test += "-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=9999"

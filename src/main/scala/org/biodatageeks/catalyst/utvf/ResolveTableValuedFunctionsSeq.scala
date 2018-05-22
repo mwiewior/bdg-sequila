@@ -21,13 +21,12 @@ package org.apache.spark.sql
 
 import java.util.Locale
 
-
 import org.apache.spark.sql.catalyst.analysis.{MultiInstanceRelation, TypeCoercion, UnresolvedTableValuedFunction}
 import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, Expression}
 import org.apache.spark.sql.catalyst.plans.logical._
 import org.apache.spark.sql.catalyst.rules._
 import org.apache.spark.sql.internal.SQLConf
-import org.apache.spark.sql.types._
+import org.apache.spark.sql.types.{StructField, _}
 
 
 /**
@@ -86,8 +85,8 @@ object ResolveTableValuedFunctionsSeq extends Rule[LogicalPlan] {
   private val builtinFunctions: Map[String, TVF] = Map(
     "coverage" -> Map(
       /* coverage(tableName) */
-      tvf("dummy"->LongType, "table" -> StringType) { case Seq(dummy:Long,table: String) =>
-        Coverage(table)
+      tvf("table" -> StringType) { case Seq(table: Any) =>
+        Coverage(table.toString)
       }),
     "range" -> Map(
       /* range(end) */
@@ -141,7 +140,13 @@ object ResolveTableValuedFunctionsSeq extends Rule[LogicalPlan] {
 /** Factory for constructing new `Coverage` nodes. */
 object Coverage {
   def apply(tableName:String): Coverage = {
-    val output = StructType(StructField("id", LongType, nullable = false) :: Nil).toAttributes
+    val output = StructType(Seq(
+      StructField("sampleId", StringType, nullable = false),
+      StructField("contigName",StringType,nullable = true),
+      StructField("position",IntegerType,nullable = false),
+      StructField("coverage",IntegerType,nullable = false)
+      )
+      ).toAttributes
     new Coverage(tableName:String,output)
   }
 //  def apply(tableName:String): Coverage = {
