@@ -8,6 +8,9 @@ import org.apache.spark.sql.execution.SparkPlan
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{Coverage, Row, SparkSession, Strategy}
 import org.apache.spark.unsafe.types.UTF8String
+import org.biodatageeks.datasources.BAM.BAMRecord
+
+import org.biodatageeks.preprocessing.coverage.CoverageReadFunctions._
 
 
 class CoverageStrategy(spark: SparkSession) extends Strategy with Serializable  {
@@ -21,17 +24,15 @@ class CoverageStrategy(spark: SparkSession) extends Strategy with Serializable  
 
 case class CoveragePlan(plan: LogicalPlan, spark: SparkSession, table:String, output: Seq[Attribute]) extends SparkPlan with Serializable {
   def doExecute(): org.apache.spark.rdd.RDD[InternalRow] = {
-    val df = spark.sql(s"select sampleId,contigName,start,1 FROM ${table}")
-      .limit(10)
+    import spark.implicits._
+    val ds = spark.sql(s"select * FROM ${table}")
+      .as[BAMRecord]
+      .filter(r=>r.contigName != null)
     val schema = plan.schema
-    df.rdd
-        .map(r=>Row.fromSeq(Seq(
-          UTF8String.fromString(r.getString(0)),
-          UTF8String.fromString(r.getString(1)),
-            r.getInt(2),
-            r.getInt(3)
-        ) ) )
-      .map(r=>  UnsafeProjection.create(schema).apply(InternalRow.fromSeq(r.toSeq)))
+    val cov = ds.rdd.baseCoverage(None,Some(4),sorted=false)
+      cov
+      .map(r=>  UnsafeProjection.create(schema).apply(InternalRow.fromSeq(Seq(UTF8String.fromString(r.sampleId),
+        UTF8String.fromString(r.chr),r.position,r.coverage))))
   }
 
   def children: Seq[SparkPlan] = Nil

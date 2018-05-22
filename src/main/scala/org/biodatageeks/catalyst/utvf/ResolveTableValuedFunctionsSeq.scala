@@ -163,7 +163,7 @@ case class Coverage(tableName:String,
 
   def toSQL(): String = {
 
-    s"SELECT id AS `${output.head.name}` FROM coverage($tableName)"
+    s"SELECT sampleId,contigName,position,coverage AS `${output.head.name}` FROM coverage('$tableName')"
   }
 
   override def newInstance(): Coverage = copy(output = output.map(_.newInstance()))
@@ -174,6 +174,6 @@ case class Coverage(tableName:String,
   }
 
   override def simpleString: String = {
-    s"Coverage ($tableName)"
+    s"Coverage ('$tableName')"
   }
 }

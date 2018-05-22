@@ -10,6 +10,7 @@ import org.apache.spark.sql.execution.QueryExecution
 import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.{SparkSession, SparkSessionExtensions}
 import org.apache.spark.sql.internal.{SQLConf, SessionState}
+import org.biodatageeks.preprocessing.coverage.CoverageStrategy
 
 import scala.util.Random
 
@@ -70,7 +71,10 @@ object UTVFRegister {
     //val context: SparkContext = new SparkContext(conf)
     val session: SparkSession = MySparkSession(spark)
     session.sparkContext.setLogLevel("INFO")
-    println(session.sql("select * from coverage(0,'test')").explain(true))
+    session.experimental.extraStrategies = new CoverageStrategy(session) :: Nil
+    session.sql("select * from coverage('test')").explain(true)
+    session.sql("select * from coverage('test')").explain(true)
+    session.sql("select * from coverage('test')").explain(true)
   }
 
 }
