@@ -3,7 +3,7 @@ package pl.edu.pw.ii.biodatageeks.tests
 import java.io.{OutputStreamWriter, PrintWriter}
 
 import com.holdenkarau.spark.testing.{DataFrameSuiteBase, SharedSparkContext}
-import org.apache.spark.sql.{MySparkSession, SparkSession}
+import org.apache.spark.sql.{SequilaSession, SparkSession}
 import org.bdgenomics.utils.instrumentation.{Metrics, MetricsListener, RecordedMetrics}
 import org.biodatageeks.datasources.BAM.BAMRecord
 import org.biodatageeks.preprocessing.coverage.CoverageStrategy
@@ -42,15 +42,13 @@ class CoverageTestSuite extends FunSuite with DataFrameSuiteBase with BeforeAndA
 
     }
   test("BAM - coverage table-valued function"){
-    val session: SparkSession = MySparkSession(spark)
+    val session: SparkSession = SequilaSession(spark)
 
     session.experimental.extraStrategies = new CoverageStrategy(session) :: Nil
     //session.sparkContext.setLogLevel("INFO")
     assert(session.sql(s"SELECT * FROM coverage('${tableNameBAM}') WHERE position=20204").first().getInt(3)===1019)
-    session.experimental.extraStrategies = new CoverageStrategy(session) :: Nil
-    session.sql(s"CREATE TABLE filtered_reads AS SELECT * FROM ${tableNameBAM} WHERE mapq > 10 AND start> 200")
-    session.experimental.extraStrategies = new CoverageStrategy(session) :: Nil
-    session.sql(s"SELECT * FROM coverage('filtered_reads')").show(5)
+
+
 
   }
 

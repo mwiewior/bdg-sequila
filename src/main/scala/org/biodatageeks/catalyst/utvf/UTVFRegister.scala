@@ -19,13 +19,13 @@ import scala.util.Random
 
 
 
-case class MySparkSession(sparkSession: SparkSession) extends SparkSession(sparkSession.sparkContext) {
+case class SequilaSession(sparkSession: SparkSession) extends SparkSession(sparkSession.sparkContext) {
   val myAnalyzer = new SeQuiLaAnalyzer(sparkSession.sessionState.catalog,sparkSession.sessionState.conf)
   def executePlan(plan:LogicalPlan) =  new QueryExecution(sparkSession,myAnalyzer.execute(plan))
-  override lazy val sessionState = MySessionState(sparkSession,myAnalyzer,executePlan)
+  override lazy val sessionState = SequilaSessionState(sparkSession,myAnalyzer,executePlan)
 }
 
-case class MySessionState(sparkSession: SparkSession, customAnalyzer: Analyzer,executePlan: LogicalPlan => QueryExecution)
+case class SequilaSessionState(sparkSession: SparkSession, customAnalyzer: Analyzer, executePlan: LogicalPlan => QueryExecution)
   extends SessionState(sparkSession.sharedState,
     sparkSession.sessionState.conf,
     sparkSession.sessionState.experimentalMethods,
@@ -69,7 +69,7 @@ object UTVFRegister {
 
     //val conf: SparkConf = new SparkConf().setMaster("local[*]").setAppName("sparkathon")
     //val context: SparkContext = new SparkContext(conf)
-    val session: SparkSession = MySparkSession(spark)
+    val session: SparkSession = SequilaSession(spark)
     session.sparkContext.setLogLevel("INFO")
     session.experimental.extraStrategies = new CoverageStrategy(session) :: Nil
     session.sql("select * from coverage('test')").explain(true)
