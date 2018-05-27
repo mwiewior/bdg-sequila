@@ -28,7 +28,6 @@ class BAMRelation (path:String)(@transient val sqlContext: SQLContext)
 
   val spark = sqlContext
     .sparkSession
-  spark.experimental.extraStrategies = new IntervalTreeJoinStrategyOptim(spark) :: Nil
 
   spark
     .sparkContext

@@ -43,13 +43,7 @@ case class SequilaSessionState(sparkSession: SparkSession, customAnalyzer: Analy
     (sparkSession:SparkSession,sessionState: SessionState) => sessionState.clone(sparkSession)){
 }
 
-object MyRule extends Rule[LogicalPlan] {
-  def apply(plan: LogicalPlan): LogicalPlan = {
-    println("yoooo działa PRINTLN!!!")
-    // TODO: make some changes to LogicalPlan :)
-    plan
-  }
-}
+
 
 object UTVFRegister {
 

@@ -264,15 +264,17 @@ Coverage
 In order to compute coverage for your sample you can run a set of queries as follows:
 
 ::
-
-    spark.sql(
+    val tableNameBAM = "reads"
+    ss.sql("CREATE DATABASE dna")
+    ss.sql("USE dna")
+    ss.sql(
             s"""
                |CREATE TABLE ${tableNameBAM}
                |USING org.biodatageeks.datasources.BAM.BAMDataSource
                |OPTIONS(path "${bamPath}")
                |
           """.stripMargin)
-    spark.sql(s"SELECT * FROM coverage('${tableNameBAM}').show(5)
+    ss.sql(s"SELECT * FROM coverage('${tableNameBAM}')").show(5)
 
     +--------+----------+--------+--------+
     |sampleId|contigName|position|coverage|
@@ -288,8 +290,8 @@ If you would like to do additional short reads prefiltering, you can create a te
 
 ::
 
-    spark.sql(s"CREATE TABLE filtered_reads AS SELECT * FROM ${tableNameBAM} WHERE mapq > 10 AND start> 200")
-    spark.sql(s"SELECT * FROM coverage('filtered_reads')").show(5)
+    ss.sql(s"CREATE TABLE filtered_reads AS SELECT * FROM ${tableNameBAM} WHERE mapq > 10 AND start> 200")
+    ss.sql(s"SELECT * FROM coverage('filtered_reads')").show(5)
 
     +--------+----------+--------+--------+
     |sampleId|contigName|position|coverage|

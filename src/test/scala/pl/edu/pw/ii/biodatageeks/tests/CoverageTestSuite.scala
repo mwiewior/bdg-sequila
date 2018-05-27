@@ -47,7 +47,7 @@ class CoverageTestSuite extends FunSuite with DataFrameSuiteBase with BeforeAndA
     session.experimental.extraStrategies = new CoverageStrategy(session) :: Nil
     //session.sparkContext.setLogLevel("INFO")
     assert(session.sql(s"SELECT * FROM coverage('${tableNameBAM}') WHERE position=20204").first().getInt(3)===1019)
-
+    session.sql(s"SELECT * FROM coverage_hist('${tableNameBAM}') WHERE position=20204").show()
 
 
   }

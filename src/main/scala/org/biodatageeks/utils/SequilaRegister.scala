@@ -6,5 +6,7 @@ import org.biodatageeks.rangejoins.IntervalTree.IntervalTreeJoinStrategyOptim
 
 object SequilaRegister {
 
-  def register(spark : SparkSession) = spark.experimental.extraStrategies = Seq( new IntervalTreeJoinStrategyOptim(spark), new CoverageStrategy(spark))
+  def register(spark : SparkSession) = spark.experimental.extraStrategies =
+    Seq( new IntervalTreeJoinStrategyOptim(spark),
+      new CoverageStrategy(spark))
 }

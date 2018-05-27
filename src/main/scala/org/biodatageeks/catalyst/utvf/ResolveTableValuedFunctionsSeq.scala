@@ -88,6 +88,11 @@ object ResolveTableValuedFunctionsSeq extends Rule[LogicalPlan] {
       tvf("table" -> StringType) { case Seq(table: Any) =>
         Coverage(table.toString)
       }),
+    "coverage_hist" -> Map(
+      /* coverage_hist(tableName) */
+      tvf("table" -> StringType) { case Seq(table: Any) =>
+        CoverageHist(table.toString)
+      }),
     "range" -> Map(
       /* range(end) */
       tvf("end" -> LongType) { case Seq(end: Long) =>
@@ -149,9 +154,7 @@ object Coverage {
       ).toAttributes
     new Coverage(tableName:String,output)
   }
-//  def apply(tableName:String): Coverage = {
-//    Coverage(tableName:String)
-//  }
+
 }
 
 case class Coverage(tableName:String,
@@ -175,5 +178,47 @@ case class Coverage(tableName:String,
 
   override def simpleString: String = {
     s"Coverage ('$tableName')"
+  }
+}
+
+
+/*coverage_hist*/
+object CoverageHist {
+  def apply(tableName:String): CoverageHist = {
+    val output = StructType(Seq(
+      StructField("sampleId", StringType, nullable = false),
+      StructField("contigName",StringType,nullable = true),
+      StructField("position",IntegerType,nullable = false),
+      StructField("coverage",StringType,nullable = false),
+      //StructField("coverage",ArrayType(IntegerType,false),nullable = false)
+      StructField("coverageTotal",IntegerType,nullable = false)
+    )
+    ).toAttributes
+    new CoverageHist(tableName:String,output)
+  }
+
+}
+
+case class CoverageHist(tableName:String,
+                    output: Seq[Attribute])
+  extends LeafNode with MultiInstanceRelation {
+
+
+  val numElements: BigInt = 1
+
+  def toSQL(): String = {
+
+    s"SELECT sampleId,contigName,position,coverage AS `${output.head.name}` FROM coverage_hist('$tableName')"
+  }
+
+  override def newInstance(): CoverageHist = copy(output = output.map(_.newInstance()))
+
+  override def computeStats(conf: SQLConf): Statistics = {
+    val sizeInBytes = LongType.defaultSize * numElements
+    Statistics( sizeInBytes = sizeInBytes )
+  }
+
+  override def simpleString: String = {
+    s"Coverage_hist ('$tableName')"
   }
 }

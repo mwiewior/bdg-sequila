@@ -123,7 +123,8 @@ Integration with R using SparkR
 ###############################
 
 .. code-block:: bash
-
+    mkdir -p /Users/biodatageek/data
+    #put some data into the above folder
     docker run -e USERID=$UID -e GROUPID=$(id -g) -it -v /Users/biodatageek/data:/data \
     -p 4040:4040 biodatageeks/|project_name|:|version| bdg-sequilaR
 
