@@ -189,8 +189,8 @@ object CoverageHist {
       StructField("sampleId", StringType, nullable = false),
       StructField("contigName",StringType,nullable = true),
       StructField("position",IntegerType,nullable = false),
-      StructField("coverage",StringType,nullable = false),
-      //StructField("coverage",ArrayType(IntegerType,false),nullable = false)
+      //StructField("coverage",StringType,nullable = false),
+      StructField("coverage",ArrayType(IntegerType,false),nullable = false),
       StructField("coverageTotal",IntegerType,nullable = false)
     )
     ).toAttributes

@@ -8,6 +8,7 @@ import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.execution.SparkPlan
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql._
+import org.apache.spark.sql.catalyst.encoders.ExpressionEncoder
 import org.apache.spark.unsafe.types.UTF8String
 import org.biodatageeks.datasources.BAM.BAMRecord
 import org.biodatageeks.preprocessing.coverage.CoverageReadFunctions._
@@ -55,11 +56,20 @@ case class CoverageHistPlan(plan: LogicalPlan, spark: SparkSession, table:String
     val schema = plan.schema
     val params = CoverageHistParam(CoverageHistType.MAPQ,Array(0,1,2,3,50))
     val cov = ds.rdd.baseCoverageHist(Some(0),None,params)
+//    val emptyIntArray =
+//      ExpressionEncoder[Array[Int]]().resolveAndBind().toRow(Array.emptyIntArray).getArray(0)
     cov
       .mapPartitions(p=>{
         val proj =  UnsafeProjection.create(schema)
-        p.map(r=>   proj.apply(InternalRow.fromSeq(Seq(UTF8String.fromString(r.sampleId),
-          UTF8String.fromString(r.chr),r.position,UTF8String.fromString(r.coverage.mkString(",") ),r.coverageTotal) ) ) )
+        val exprEnc =  ExpressionEncoder[Array[Int]]().resolveAndBind()
+        p.map(r=>   proj.apply(InternalRow.fromSeq(
+          Seq(
+            UTF8String.fromString(r.sampleId),
+            UTF8String.fromString(r.chr),
+            r.position,
+           exprEnc.toRow(r.coverage).getArray(0),
+            //UTF8String.fromString(r.coverage.mkString(",") ),
+            r.coverageTotal) ) ) )
       })
     //spark.sparkContext.emptyRDD[InternalRow]
   }
