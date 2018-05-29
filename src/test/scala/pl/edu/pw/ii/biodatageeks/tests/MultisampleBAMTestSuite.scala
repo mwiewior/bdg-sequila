@@ -4,6 +4,7 @@ import java.io.{OutputStreamWriter, PrintWriter}
 
 import com.holdenkarau.spark.testing.{DataFrameSuiteBase, SharedSparkContext}
 import org.apache.spark
+import org.apache.spark.sql.SequilaSession
 import org.bdgenomics.utils.instrumentation.{Metrics, MetricsListener, RecordedMetrics}
 import org.biodatageeks.rangejoins.IntervalTree.IntervalTreeJoinStrategyOptim
 import org.scalatest.{BeforeAndAfter, FunSuite}
@@ -64,6 +65,7 @@ class MultisampleBAMTestSuite extends FunSuite with DataFrameSuiteBase with Befo
   }
 
   test("Multisample groupby - cast issue") {
+    val ss = new SequilaSession(spark)
     val query =
       """
         |SELECT targets.GeneId as GeneId, targets.contigName as Chr,
@@ -74,15 +76,15 @@ class MultisampleBAMTestSuite extends FunSuite with DataFrameSuiteBase with Befo
         |GROUP BY targets.GeneId, targets.contigName, targets.Start, targets.End, targets.Strand
       """.stripMargin
 
-    val targets = spark
+    val targets = ss
       .sqlContext
       .createDataFrame(Array(Gene("chr1",20138,20294,"TestGene","+")))
     targets
       .createOrReplaceTempView("targets")
 
-    spark.sql(query).explain(true)
-    spark.sql(query).count
-    //assert(spark.sql(query).first().getLong(1) === 1484L)
+    ss.sql(query).explain(true)
+    ss.sql(query).count
+    assert(spark.sql(query).first().getLong(5) === 4452L)
   }
 
   test("Multisample - partition pruning one sample test"){

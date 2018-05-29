@@ -147,8 +147,8 @@ If you would like to use our Docker image for running R analyses you can do it a
     #connect to sequila
     ss <- sequila_connect("local[1]")
     #create db
-    sequila_sql(ss,"CREATE DATABASE sequila")
-    sequila_sql(ss,"USE sequila")
+    sequila_sql(ss,query="CREATE DATABASE sequila")
+    sequila_sql(ss,query="USE sequila")
     #create a BAM data source with reads
     sequila_sql(ss,'reads','CREATE TABLE reads USING org.biodatageeks.datasources.BAM.BAMDataSource OPTIONS(path "/data/c1_10M.bam")')
     #parse GTF with target regions
@@ -157,7 +157,7 @@ If you would like to use our Docker image for running R analyses you can do it a
      USING csv
      OPTIONS (path "/data/Homo_sapiens.gtf", header "false", inferSchema "false", delimiter "\t")')
 
-    #a query to compute counts per targer
+    #a query to compute counts per target
     query <- "SELECT Gene_id,Chr ,targets.Start ,targets.End ,Strand ,CAST(targets.End AS INTEGER)-
     CAST(targets.Start AS INTEGER) + 1 AS Length, count(*) AS Counts FROM reads JOIN targets_temp as targets
     ON (Chr=reads.contigName AND reads.end >= CAST(targets.Start AS INTEGER)
@@ -166,6 +166,7 @@ If you would like to use our Docker image for running R analyses you can do it a
 
     #get sample output
     sequila_sql(ss,'results',query)
+    ###ERROR - task not serializable
 
           Gene_id Chr     Start       End Strand Length Counts
     1     g1   6  73263359  73301401      +  38043    157
