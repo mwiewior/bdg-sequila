@@ -8,10 +8,17 @@ RUN useradd -m tempuser
 # Spark related variables.
 ##COMPONENT_VERSION variable will be replaced during the build process
 
-ARG BDG_VERSION={{COMPONENT_VERSION}}
+ARG BDG_VERSION=0.4-SNAPSHOT
 
 ####set variable used in all shell scritps for downloading jars
-ENV BGD_VERSION={{COMPONENT_VERSION}}
+ENV BGD_VERSION=0.4-SNAPSHOT
+
+
+
+RUN apt-get update && apt-get install --yes git sudo curl libssl-dev libxml2-dev
+
+
+
 
 
 
@@ -105,11 +112,21 @@ RUN apt-get update \
 RUN Rscript -e 'source("http://bioconductor.org/biocLite.R")' -e 'biocLite("edgeR")'
 RUN Rscript -e 'source("http://bioconductor.org/biocLite.R")' -e 'biocLite("DESeq2")'
 
+#install devtools
+RUN Rscript -e "install.packages('devtools')"
+#install sequila
+RUN Rscript -e "devtools::install_github('ZSI-Bio/bdg-sparklyr-sequila')"
+
 USER tempuser
 
 WORKDIR /home/tempuser
 ##just to download all depencies and speedup start
 RUN bdg-shell -i /tmp/bdg-toolset/warmcache.scala build
+
+
+
+#install spark (installed by .onLoad when package loaded)
+RUN Rscript -e "library(sequila)"
 
 USER root
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]

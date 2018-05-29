@@ -119,10 +119,21 @@ When you have existing analysis pipeline in Spark ecosystem you may benefit from
    :align: center
 
 
-Integration with R using SparkR
-###############################
+Integration with R using SeQuilaR or RStudio
+############################################
+
+A `saprklyr <http://spark.rstudio.com/>`_ extension package has been developed. It can be installed in the following way:
+
+.. code-block:: R
+
+    install.packages("devtools")
+    library(devtools)
+    install_github("ZSI-Bio/bdg-sparklyr-sequila")
+
+If you would like to use our Docker image for running R analyses you can do it as follows (you can skip package installation):
 
 .. code-block:: bash
+
     mkdir -p /Users/biodatageek/data
     #put some data into the above folder
     docker run -e USERID=$UID -e GROUPID=$(id -g) -it -v /Users/biodatageek/data:/data \
@@ -132,14 +143,16 @@ Integration with R using SparkR
 .. code-block:: R
 
     #register SeQuilaR extensions
-    sparkR.callJStatic("org.biodatageeks.R.SequilaR","init",spark)
+    library(sequila)
+    #connect to sequila
+    ss <- sequila_connect("local[1]")
     #create db
-    sql("CREATE DATABASE sequila")
-    sql("USE sequila")
+    sequila_sql(ss,"CREATE DATABASE sequila")
+    sequila_sql(ss,"USE sequila")
     #create a BAM data source with reads
-    sql('CREATE TABLE reads USING org.biodatageeks.datasources.BAM.BAMDataSource OPTIONS(path "/data/c1_10M.bam")')
+    sequila_sql(ss,'reads','CREATE TABLE reads USING org.biodatageeks.datasources.BAM.BAMDataSource OPTIONS(path "/data/c1_10M.bam")')
     #parse GTF with target regions
-    sql('CREATE TABLE targets_temp(Chr string, TypeDB string, Feature string, Start integer,
+    sequila_sql(ss,'targets','CREATE TABLE targets_temp(Chr string, TypeDB string, Feature string, Start integer,
     End integer, t1 string, Strand string, t2 string, Gene_id_temp string ,Gene_id string)
      USING csv
      OPTIONS (path "/data/Homo_sapiens.gtf", header "false", inferSchema "false", delimiter "\t")')
@@ -150,10 +163,9 @@ Integration with R using SparkR
     ON (Chr=reads.contigName AND reads.end >= CAST(targets.Start AS INTEGER)
     AND reads.start <= CAST(targets.End AS INTEGER)) GROUP BY Gene_id, Chr, targets.Start, targets.End, Strand"
 
-    #check physical execution plan to verify if IntervalTreeJoinOptimChromosome strategy is used
-    explain(sql(query))
+
     #get sample output
-    head(sql(query))
+    sequila_sql(ss,'results',query)
 
           Gene_id Chr     Start       End Strand Length Counts
     1     g1   6  73263359  73301401      +  38043    157
@@ -163,9 +175,10 @@ Integration with R using SparkR
     5     g5  20  58891302  58911192      +  19891   6728
     6     g6   7  42935021  42935136      +    116     64
 
+    sequila_disconnect(ss)
 .. note::
 
-    For more detailed instruction on how to work with SparkR API please consult `SparkR <https://spark.apache.org/docs/2.3.0/sparkr.html>`_ documentation.
+    For more detailed instruction on how to work with saprklyr API please consult `sparklyr <http://spark.rstudio.com/>`_ documentation.
 
 Integration over JDBC with SeQuiLa Thrift Server
 ################################################

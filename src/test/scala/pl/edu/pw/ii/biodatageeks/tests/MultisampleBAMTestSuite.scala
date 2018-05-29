@@ -100,7 +100,8 @@ class MultisampleBAMTestSuite extends FunSuite with DataFrameSuiteBase with Befo
 
     val query =
       """
-        |SELECT sampleId,count(*) FROM reads where sampleId IN('NA12878','NA12879') group by sampleId order by sampleId
+        |SELECT sampleId,count(*) FROM reads where sampleId IN('NA12878','NA12879')
+        |GROUP BY sampleId order by sampleId
       """.stripMargin
 
     //spark.sql(query).explain(true)

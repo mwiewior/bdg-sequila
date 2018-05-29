@@ -42,6 +42,9 @@ ENV JAVA_HOME /usr/lib/jvm/java-8-oracle
 COPY NA12878.slice.bam /tmp/NA12878.slice.bam
 COPY warmcache.scala /tmp/warmcache.scala
 
+#sequila versions
+
+ARG BDG_VERSION 0.4-SNAPSHOT
 ENV BGD_VERSION 0.4-SNAPSHOT
 RUN /root/spark/spark-2.2.1-bin-hadoop2.7/bin/spark-shell --packages org.biodatageeks:bdg-sequila_2.11:${BGD_VERSION} \
  -i /tmp/warmcache.scala --repositories https://zsibio.ii.pw.edu.pl/nexus/repository/maven-releases/,https://zsibio.ii.pw.edu.pl/nexus/repository/maven-snapshots/
