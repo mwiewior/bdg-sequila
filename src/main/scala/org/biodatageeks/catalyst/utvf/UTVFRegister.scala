@@ -20,9 +20,9 @@ import scala.util.Random
 
 
 case class SequilaSession(sparkSession: SparkSession) extends SparkSession(sparkSession.sparkContext) {
-  val myAnalyzer = new SeQuiLaAnalyzer(sparkSession.sessionState.catalog,sparkSession.sessionState.conf)
+  @transient val myAnalyzer = new SeQuiLaAnalyzer(sparkSession.sessionState.catalog,sparkSession.sessionState.conf)
   def executePlan(plan:LogicalPlan) =  new QueryExecution(sparkSession,myAnalyzer.execute(plan))
-  override lazy val sessionState = SequilaSessionState(sparkSession,myAnalyzer,executePlan)
+  @transient override lazy val sessionState = SequilaSessionState(sparkSession,myAnalyzer,executePlan)
 }
 
 case class SequilaSessionState(sparkSession: SparkSession, customAnalyzer: Analyzer, executePlan: LogicalPlan => QueryExecution)

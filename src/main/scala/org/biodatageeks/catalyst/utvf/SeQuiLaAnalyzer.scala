@@ -9,7 +9,7 @@ import org.apache.spark.sql.internal.SQLConf
 import scala.util.Random
 
 
-class SeQuiLaAnalyzer(catalog: SessionCatalog, conf: SQLConf) extends Analyzer(catalog, conf, conf.optimizerMaxIterations) {
+class SeQuiLaAnalyzer(catalog: SessionCatalog, conf: SQLConf) extends Analyzer(catalog, conf, conf.optimizerMaxIterations){
   //override val extendedResolutionRules: Seq[Rule[LogicalPlan]] = Seq(ResolveTableValuedFunctionsSeq)
 
 
