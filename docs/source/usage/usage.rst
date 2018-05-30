@@ -204,8 +204,8 @@ Once done simply stop it as follows:
     For detailed instructions on how to run Spark Thrift Server please check this `page <https://developer.ibm.com/hadoop/2016/08/22/how-to-run-queries-on-spark-sql-using-jdbc-via-thrift-server/>`_.
     Please note that all options including resource management can be set in exactly the same way as in Spark Thrift Server.
 
-Integration with R-application
-*******************************
+Integration with R-application over JDBC
+****************************************
 
 1. Install rJava and RJDBC packages:
 
