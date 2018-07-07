@@ -107,7 +107,8 @@ class CoverageReadFunctions(covReadRDD:RDD[BAMRecord]) extends Serializable {
           }
           chrMinMax.append((lastChr, lastPosition))
           Array(PartitionCoverage(covMap, maxCigarLength, outputSize, chrMinMax.toArray)).iterator
-        }.persist(StorageLevel.MEMORY_AND_DISK_SER)
+        }
+          //.persist(StorageLevel.MEMORY_AND_DISK_SER)
         val maxCigarLengthGlobal = partCov.map(r => r.maxCigarLength).reduce((a, b) => scala.math.max(a, b))
         lazy val combOutput = partCov.mapPartitions { partIterator =>
           /*split for reduction basing on position and max cigar length across all partitions - for gap alignments*/
@@ -142,7 +143,7 @@ class CoverageReadFunctions(covReadRDD:RDD[BAMRecord]) extends Serializable {
         lazy val covReduced = combOutput.flatMap(r => r.array(1)).map(r => ((r.chr, r.position), r))
           .reduceByKey((a, b) => CoverageRecord(sampleId,a.chr, a.position, a.coverage + b.coverage))
           .map(_._2)
-        partCov.unpersist()
+        //partCov.unpersist()
         combOutput.flatMap(r => (r.array(0)))
           .union(covReduced)
 

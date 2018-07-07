@@ -44,17 +44,21 @@ libraryDependencies += "ch.cern.sparkmeasure" %% "spark-measure" % "0.11"
 
 //libraryDependencies += "pl.edu.pw.ii.zsibio" % "common-routines_2.11" % "0.1-SNAPSHOT"
 
-fork := false
-fork in Test := true
+libraryDependencies += "org.xerial.larray" % "larray_2.11" % "0.4.1"
+
+libraryDependencies += "org.hammerlab.bam" %% "load" % "1.2.0-M1"
+
+fork := true
+fork in Test := false
 //parallelExecution in Test := false
 javaOptions in test += "-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=9999"
-javaOptions in run += "-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=9999"
+//javaOptions in run += "-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=9999"
 
 //javaOptions in run ++= Seq(
 //  "-Dlog4j.debug=true",
 //  "-Dlog4j.configuration=log4j.properties")
 
-javaOptions ++= Seq("-Xms512M", "-Xmx8192M", "-XX:+CMSClassUnloadingEnabled")
+javaOptions ++= Seq("-Xms512M", "-Xmx8192M")
 
 updateOptions := updateOptions.value.withLatestSnapshots(false)
 
