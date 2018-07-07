@@ -2,12 +2,13 @@ package org.biodatageeks.preprocessing.coverage
 
 import java.io.File
 
-import htsjdk.samtools.{Cigar, CigarOperator}
+import htsjdk.samtools.{Cigar, CigarOperator, ValidationStringency}
 import org.apache.hadoop.io.LongWritable
 import org.apache.spark
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession
 import org.hammerlab.paths.Path
+import org.seqdoop.hadoop_bam.util.SAMHeaderReader
 import org.seqdoop.hadoop_bam.{BAMInputFormat, SAMRecordWritable}
 
 import scala.collection.mutable
@@ -129,9 +130,13 @@ object CoverageMOS {
   def main(args: Array[String]): Unit = {
     val spark = SparkSession.builder()
       .master("local[1]")
-      .config("spark.driver.memory","6g")
+      .config("spark.driver.memory","4g")
       .getOrCreate()
 
+    spark
+      .sparkContext
+      .hadoopConfiguration
+      .set(SAMHeaderReader.VALIDATION_STRINGENCY_PROPERTY, ValidationStringency.LENIENT.toString)
     lazy val alignments = spark.sparkContext
       .newAPIHadoopFile[LongWritable, SAMRecordWritable, BAMInputFormat]("/Users/marek/data/NA12878.chrom20.ILLUMINA.bwa.CEU.low_coverage.20121211.bam")
 
@@ -148,7 +153,7 @@ object CoverageMOS {
     //lazy val combinedRes = combineEvents(events,63025520,1000)
     lazy val coverage = eventsToCoverage("test",events)
     spark.time{
-      println(coverage.count)
+      println(coverage.count())
 
     }
     spark.stop()
