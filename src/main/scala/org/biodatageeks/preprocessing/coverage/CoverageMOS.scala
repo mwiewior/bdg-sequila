@@ -16,89 +16,95 @@ import scala.collection.mutable.ArrayBuffer
 case class CovRecord(contig:String,pos:Int, cov:Short)
 object CoverageMOS {
 
-  def mergeArrays(a:Array[Short],b:Array[Short]) = {
-    val c = new Array[Short](a.length)
+  def mergeArrays(a:(Array[Short],Int,Int,Int),b:(Array[Short],Int,Int,Int)) = {
+    val c = new Array[Short](a._4)
     for(i<- 0 to c.length - 1 ){
-      c(i) = (a(i) + b(i)).toShort
+      c(i) = (( if(i >= a._2 && i < a._2+a._1.length) a._1(i-a._2) else 0)  + (if(i >= b._2 && i < b._2+b._1.length) b._1(i-b._2) else 0)).toShort
     }
-    c
+    (c,0,a._4,a._4)
   }
 
   def readsToEventsArray(reads:RDD[SAMRecordWritable])   = {
     reads.mapPartitions{
       p =>
-        val EDGE_BUFFER = 1000
+//        val EDGE_BUFFER = 1000
 
-        def eventOp(position:Int,contig:String,contigLength:Int,contigEventsMap:mutable.HashMap[String,Array[Short]],
-                    contigEventsEdgesMap:mutable.HashMap[String,Array[Short]],incr:Boolean) ={
+        def eventOp(pos:Int,startPart:Int,contig:String,contigEventsMap:mutable.HashMap[String,(Array[Short],Int,Int,Int)],incr:Boolean) ={
 
-          if(position > EDGE_BUFFER && position < contigLength- EDGE_BUFFER){
+            val position = pos - startPart
+//          if(position > EDGE_BUFFER && position < (contigLength - EDGE_BUFFER) ){
             if(incr)
-              contigEventsMap(contig)(position) = (contigEventsMap(contig)(position) + 1).toShort
+              contigEventsMap(contig)._1(position) = (contigEventsMap(contig)._1(position) + 1).toShort
             else
-              contigEventsMap(contig)(position) = (contigEventsMap(contig)(position) - 1).toShort
-          }
-          else {
-            if(incr)
-              contigEventsEdgesMap(contig)(position) = (contigEventsEdgesMap(contig)(position) + 1).toShort
-            else
-              contigEventsEdgesMap(contig)(position) = (contigEventsEdgesMap(contig)(position) - 1).toShort
-
-          }
+              contigEventsMap(contig)._1(position) = (contigEventsMap(contig)._1(position) - 1).toShort
+//          }
+//          else {
+//            if(incr)
+//              contigEventsMap(s"${contig}_toreduce")(position) = (contigEventsMap(s"${contig}_toreduce")(position) + 1).toShort
+//            else
+//              contigEventsMap(s"${contig}_toreduce")(position) = (contigEventsMap(s"${contig}_toreduce")(position) - 1).toShort
         }
 
         val contigLengthMap = new mutable.HashMap[String, Int]()
-        val contigEventsMap = new mutable.HashMap[String, Array[Short]]()
-        val contigEventsEdgesMap = new mutable.HashMap[String, Array[Short]]()
+        val contigEventsMap = new mutable.HashMap[String, (Array[Short],Int,Int,Int)]()
+        val contigStartStopPartMap = new mutable.HashMap[(String),Int]()
+        var lastContig: String = null
+        var lastPosition = 0
         while(p.hasNext){
           val r = p.next()
           val read = r.get()
           val contig = read.getContig
-          if(contig != null) {
+          if(contig != null && read.getFlags!= 1796) {
             if (!contigLengthMap.contains(contig)) {
               val contigLength = read.getHeader.getSequence(contig).getSequenceLength
               contigLengthMap += contig -> contigLength
-              contigEventsMap += contig -> new Array[Short](contigLength - 2*EDGE_BUFFER)
-              contigEventsEdgesMap += contig -> new Array[Short](2 * EDGE_BUFFER)
+              contigEventsMap += contig -> (new Array[Short](contigLength-read.getStart), read.getStart,contigLength-1, contigLength)
+              contigStartStopPartMap += s"${contig}_start" -> read.getStart
             }
             val cigarIterator = read.getCigar.iterator()
             var position = read.getStart
-            var contigLength = contigLengthMap(contig)
+            val contigLength = contigLengthMap(contig)
             while(cigarIterator.hasNext){
                 val cigarElement = cigarIterator.next()
                 val cigarOpLength = cigarElement.getLength
                 val cigarOp = cigarElement.getOperator
                 if (cigarOp == CigarOperator.M || cigarOp == CigarOperator.X || cigarOp == CigarOperator.EQ) {
-
-
-                  eventOp(position,contig,contigLength,contigEventsMap,contigEventsEdgesMap,true)
+                  eventOp(position,contigStartStopPartMap(s"${contig}_start"),contig,contigEventsMap,true)
                   position += cigarOpLength
-                  eventOp(position,contig,contigLength,contigEventsMap,contigEventsEdgesMap,false)
-
+                  eventOp(position,contigStartStopPartMap(s"${contig}_start"),contig,contigEventsMap,false)
                 }
                 else  if (cigarOp == CigarOperator.N || cigarOp == CigarOperator.D) position += cigarOpLength
            }
 
           }
+
       }
-        contigEventsMap.iterator
-    }//.reduceByKey((a,b)=> mergeArrays(a,b) )
+        contigEventsMap.mapValues(r=>
+        {
+          var maxIndex = 0
+          var i = 0
+          while(i < r._1.length ){
+            if(r._1(i) != 0) maxIndex = i
+            i +=1
+          }
+          (r._1.slice(0,maxIndex+1),r._2,r._3,r._4)
+        }).iterator
+    }.reduceByKey((a,b)=> mergeArrays(a,b))
   }
 
-  def eventsToCoverage(sampleId:String,events: RDD[(String,Array[Short])]) = {
+  def eventsToCoverage(sampleId:String,events: RDD[(String,(Array[Short],Int,Int,Int))]) = {
     events.mapPartitions{
       p => p.map(r=>{
         val contig = r._1
-        //val result = new Array[CoverageRecord](r._2.filter(_>0).length)
-
-        val covArray = new Array[Short](r._2.length)
+        val covArrayLength = r._2._1.length
+        val covArray = new Array[Short](covArrayLength)
         var pos = 0
         var cov = 0
         var ind = 0
         var resultLength = 0
-        val covArrayLength = r._2.length
+
         while(ind< covArrayLength){
-          cov += r._2(ind)
+          cov += r._2._1(ind)
           val currPos = pos
           pos += 1
           covArray(ind) = cov.toShort
@@ -111,7 +117,7 @@ object CoverageMOS {
         var i = 0
         while(i < covArrayLength){
           if(covArray(i) >0) {
-            result(ind) = CovRecord(contig, pos, covArray(i))
+            result(ind) = CovRecord(contig, i, covArray(i))
             ind += 1
           }
           i+= 1
@@ -122,8 +128,8 @@ object CoverageMOS {
   }
   def main(args: Array[String]): Unit = {
     val spark = SparkSession.builder()
-      .master("local[4]")
-      .config("spark.driver.memory","4g")
+      .master("local[1]")
+      .config("spark.driver.memory","6g")
       .getOrCreate()
 
     lazy val alignments = spark.sparkContext
@@ -135,13 +141,14 @@ object CoverageMOS {
     }
     spark.time{
 
-     println(events.count)
+    //println(events.count)
 
     }
+
+    //lazy val combinedRes = combineEvents(events,63025520,1000)
     lazy val coverage = eventsToCoverage("test",events)
     spark.time{
-
-      println(coverage.count())
+      println(coverage.count)
 
     }
     spark.stop()
