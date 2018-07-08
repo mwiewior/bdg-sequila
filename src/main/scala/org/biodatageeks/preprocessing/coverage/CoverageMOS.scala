@@ -120,36 +120,24 @@ object CoverageMOS {
       p => p.map(r=>{
         val contig = r._1
         val covArrayLength = r._2._1.length
-        val covArray = new Array[Short](covArrayLength)
-        var pos = 0
         var cov = 0
         var ind = 0
-        var resultLength = 0
         val posShift = r._2._2
 
-        while(ind< covArrayLength){
-          cov += r._2._1(ind)
-          val currPos = pos
-          pos += 1
-          covArray(ind) = cov.toShort
-          if(cov > 0) resultLength += 1
-          ind +=1
-        }
-
-        val result = new Array[CovRecord](resultLength)
-        ind = 0
+        val result = new Array[CovRecord](covArrayLength)
         var i = 0
         var prevCov = 0
         var blockLength = 0
         while(i < covArrayLength){
-          if(covArray(i) >0) {
-            if(prevCov>0 && prevCov != covArray(i)) {
-              result(ind) = CovRecord(contig,i+posShift - blockLength, i + posShift-1, prevCov.toShort) //change to blocks instead of values
+          cov += r._2._1(i)
+          if(cov >0) {
+            if(prevCov>0 && prevCov != cov) {
+              result(ind) = CovRecord(contig,i+posShift - blockLength, i + posShift-1, prevCov.toShort)
               blockLength = 0
               ind += 1
             }
             blockLength +=1
-            prevCov = covArray(i)
+            prevCov = cov
           }
           i+= 1
         }
@@ -159,7 +147,7 @@ object CoverageMOS {
   }
   def main(args: Array[String]): Unit = {
     val spark = SparkSession.builder()
-      .master("local[1]")
+      .master("local[4]")
       .config("spark.driver.memory","8g")
       .config("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
       .getOrCreate()
@@ -175,8 +163,8 @@ object CoverageMOS {
 
 
     lazy val alignments = spark.sparkContext
-    //.newAPIHadoopFile[LongWritable, SAMRecordWritable, BAMInputFormat]("/Users/marek//Downloads/data/NA12878.ga2.exome.maq.recal.bam")
-    .newAPIHadoopFile[LongWritable, SAMRecordWritable, BAMInputFormat]("/Users/marek/data/NA12878.chrom20.ILLUMINA.bwa.CEU.low_coverage.20121211.bam")
+    .newAPIHadoopFile[LongWritable, SAMRecordWritable, BAMInputFormat]("/Users/marek//Downloads/data/NA12878.ga2.exome.maq.recal.bam")
+    //.newAPIHadoopFile[LongWritable, SAMRecordWritable, BAMInputFormat]("/Users/marek/data/NA12878.chrom20.ILLUMINA.bwa.CEU.low_coverage.20121211.bam")
 
     lazy val events = readsToEventsArray(alignments.map(r=>r._2))
     spark.time{
