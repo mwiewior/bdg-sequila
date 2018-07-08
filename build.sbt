@@ -58,7 +58,7 @@ javaOptions in test += "-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,ad
 //  "-Dlog4j.debug=true",
 //  "-Dlog4j.configuration=log4j.properties")
 
-javaOptions ++= Seq("-Xms512M", "-Xmx4192M", "-XX:+UseG1GC")
+javaOptions ++= Seq("-Xms512M", "-Xmx8192M", "-XX:+UseG1GC")
 
 updateOptions := updateOptions.value.withLatestSnapshots(false)
 
