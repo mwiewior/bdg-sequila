@@ -126,6 +126,7 @@ object CoverageMOS {
         var cov = 0
         var ind = 0
         var resultLength = 0
+        val posShift = r._2._2
 
         while(ind< covArrayLength){
           cov += r._2._1(ind)
@@ -141,7 +142,7 @@ object CoverageMOS {
         var i = 0
         while(i < covArrayLength){
           if(covArray(i) >0) {
-            result(ind) = CovRecord(contig, i, covArray(i))
+            result(ind) = CovRecord(contig, i+posShift, covArray(i))
             ind += 1
           }
           i+= 1
@@ -168,8 +169,8 @@ object CoverageMOS {
 
 
     lazy val alignments = spark.sparkContext
-     .newAPIHadoopFile[LongWritable, SAMRecordWritable, BAMInputFormat]("/Users/marek//Downloads/data/NA12878.ga2.exome.maq.recal.bam")
-    //.newAPIHadoopFile[LongWritable, SAMRecordWritable, BAMInputFormat]("/Users/marek/data/NA12878.chrom20.ILLUMINA.bwa.CEU.low_coverage.20121211.bam")
+    // .newAPIHadoopFile[LongWritable, SAMRecordWritable, BAMInputFormat]("/Users/marek//Downloads/data/NA12878.ga2.exome.maq.recal.bam")
+    .newAPIHadoopFile[LongWritable, SAMRecordWritable, BAMInputFormat]("/Users/marek/data/NA12878.chrom20.ILLUMINA.bwa.CEU.low_coverage.20121211.bam")
 
     lazy val events = readsToEventsArray(alignments.map(r=>r._2))
     spark.time{
@@ -184,7 +185,7 @@ object CoverageMOS {
     //lazy val combinedRes = combineEvents(events)
     lazy val coverage = eventsToCoverage("test",events)
     spark.time{
-      println(coverage.count())
+      println(coverage.first())
 
     }
     spark.stop()
