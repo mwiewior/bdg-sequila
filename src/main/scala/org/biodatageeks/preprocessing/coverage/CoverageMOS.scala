@@ -14,7 +14,7 @@ import org.seqdoop.hadoop_bam.{BAMInputFormat, SAMRecordWritable}
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
-case class CovRecord(contig:String,pos:Int, cov:Short)
+case class CovRecord(contig:String,start:Int,end:Int, cov:Short)
 object CoverageMOS {
 
 
@@ -85,7 +85,6 @@ object CoverageMOS {
            }
 
           }
-
       }
         contigEventsMap
           .mapValues(r=>
@@ -97,8 +96,8 @@ object CoverageMOS {
             i +=1
           }
           (r._1.slice(0,maxIndex+1),r._2,r._2+maxIndex,r._4)
-          //(r._1.slice(REDUCE_BUFFER,maxIndex-REDUCE_BUFFER+1),r._1.slice(0,REDUCE_BUFFER)++r._1.slice(maxIndex-REDUCE_BUFFER+1,maxIndex+1),r._2,r._3,r._4)
-        }).iterator
+        }
+          ).iterator
     }.reduceByKey((a,b)=> mergeArrays(a,b))
 
   }
@@ -140,20 +139,27 @@ object CoverageMOS {
         val result = new Array[CovRecord](resultLength)
         ind = 0
         var i = 0
+        var prevCov = 0
+        var blockLength = 0
         while(i < covArrayLength){
           if(covArray(i) >0) {
-            result(ind) = CovRecord(contig, i+posShift, covArray(i))
-            ind += 1
+            if(prevCov>0 && prevCov != covArray(i)) {
+              result(ind) = CovRecord(contig,i+posShift - blockLength, i + posShift-1, prevCov.toShort) //change to blocks instead of values
+              blockLength = 0
+              ind += 1
+            }
+            blockLength +=1
+            prevCov = covArray(i)
           }
           i+= 1
         }
-      result.iterator
+      result.filter(_!=null).iterator
       })
     }.flatMap(r=>r)
   }
   def main(args: Array[String]): Unit = {
     val spark = SparkSession.builder()
-      .master("local[4]")
+      .master("local[1]")
       .config("spark.driver.memory","8g")
       .config("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
       .getOrCreate()
@@ -169,12 +175,12 @@ object CoverageMOS {
 
 
     lazy val alignments = spark.sparkContext
-    // .newAPIHadoopFile[LongWritable, SAMRecordWritable, BAMInputFormat]("/Users/marek//Downloads/data/NA12878.ga2.exome.maq.recal.bam")
+    //.newAPIHadoopFile[LongWritable, SAMRecordWritable, BAMInputFormat]("/Users/marek//Downloads/data/NA12878.ga2.exome.maq.recal.bam")
     .newAPIHadoopFile[LongWritable, SAMRecordWritable, BAMInputFormat]("/Users/marek/data/NA12878.chrom20.ILLUMINA.bwa.CEU.low_coverage.20121211.bam")
 
     lazy val events = readsToEventsArray(alignments.map(r=>r._2))
     spark.time{
-      //println(alignments.count)
+    //  println(events.count)
     }
     spark.time{
 
@@ -185,7 +191,14 @@ object CoverageMOS {
     //lazy val combinedRes = combineEvents(events)
     lazy val coverage = eventsToCoverage("test",events)
     spark.time{
-      println(coverage.first())
+      println(coverage.count())
+
+    }
+
+    spark.time{
+      coverage
+        .take(2)
+        .foreach(println(_))
 
     }
     spark.stop()
