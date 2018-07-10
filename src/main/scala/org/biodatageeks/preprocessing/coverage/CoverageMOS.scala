@@ -102,19 +102,19 @@ object CoverageMOS {
 
   }
 
-  def combineEvents(events: RDD[(String,(Array[Short],Array[Short],Int,Int,Int))]) = {
-    lazy val partialResults = events
-      .mapValues{
-        r=> (r._1,r._3,r._4,r._5)
-      }
-    lazy val eventsToReduce = events
-      .mapValues{
-        r=> (r._2,r._3,r._4,r._5)
-      }
-    eventsToReduce
-
-    partialResults.union(eventsToReduce)
-  }
+//  def combineEvents(events: RDD[(String,(Array[Short],Array[Short],Int,Int,Int))]) = {
+//    lazy val partialResults = events
+//      .mapValues{
+//        r=> (r._1,r._3,r._4,r._5)
+//      }
+//    lazy val eventsToReduce = events
+//      .mapValues{
+//        r=> (r._2,r._3,r._4,r._5)
+//      }
+//    eventsToReduce
+//
+//    partialResults.union(eventsToReduce)
+//  }
   def eventsToCoverage(sampleId:String,events: RDD[(String,(Array[Short],Int,Int,Int))]) = {
     events.mapPartitions{
       p => p.map(r=>{
@@ -147,7 +147,7 @@ object CoverageMOS {
   }
   def main(args: Array[String]): Unit = {
     val spark = SparkSession.builder()
-      .master("local[4]")
+      .master("local[5]")
       .config("spark.driver.memory","8g")
       .config("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
       .getOrCreate()
@@ -159,16 +159,16 @@ object CoverageMOS {
     spark
       .sparkContext
       .hadoopConfiguration
-      .setInt("mapred.min.split.size",134217728)
+      .setInt("mapred.min.split.size",(0.5*134217728).toInt)
 
-
+    spark.sparkContext.setLogLevel("INFO")
     lazy val alignments = spark.sparkContext
-    .newAPIHadoopFile[LongWritable, SAMRecordWritable, BAMInputFormat]("/Users/marek//Downloads/data/NA12878.ga2.exome.maq.recal.bam")
-    //.newAPIHadoopFile[LongWritable, SAMRecordWritable, BAMInputFormat]("/Users/marek/data/NA12878.chrom20.ILLUMINA.bwa.CEU.low_coverage.20121211.bam")
+    //.newAPIHadoopFile[LongWritable, SAMRecordWritable, BAMInputFormat]("/Users/marek//Downloads/data/NA12878.ga2.exome.maq.recal.bam")
+    .newAPIHadoopFile[LongWritable, SAMRecordWritable, BAMInputFormat]("/Users/marek/data/NA12878.chrom20.ILLUMINA.bwa.CEU.low_coverage.20121211.bam")
 
     lazy val events = readsToEventsArray(alignments.map(r=>r._2))
     spark.time{
-    //  println(events.count)
+     //println(alignments.count)
     }
     spark.time{
 
