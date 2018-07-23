@@ -6,7 +6,7 @@ import htsjdk.samtools.{BAMFileReader, CigarOperator, SamReaderFactory, Validati
 import org.apache.hadoop.io.LongWritable
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession
-import org.seqdoop.hadoop_bam.{AnySAMInputFormat, BAMInputFormat, SAMRecordWritable}
+import org.seqdoop.hadoop_bam.{AnySAMInputFormat, BAMBDGInputFormat, BAMInputFormat, SAMRecordWritable}
 import org.seqdoop.hadoop_bam.util.SAMHeaderReader
 
 import scala.collection.mutable
@@ -151,16 +151,16 @@ object CoverageMethodsMos {
     spark
       .sparkContext
       .hadoopConfiguration
-      //.setBoolean("hadoopbam.bam.use-intel-inflater",true)
+      .set("hadoopbam.bam.inflate","intel_gkl")
 
     //spark.sparkContext.setLogLevel("INFO")
     lazy val alignments = spark.sparkContext
-      .newAPIHadoopFile[LongWritable, SAMRecordWritable, BAMInputFormat]("/Users/marek//Downloads/data/NA12878.ga2.exome.maq.recal.bam")
-   // .newAPIHadoopFile[LongWritable, SAMRecordWritable,BAMInputFormat]("/Users/marek/data/NA12878.chrom20.ILLUMINA.bwa.CEU.low_coverage.20121211.bam")
+      .newAPIHadoopFile[LongWritable, SAMRecordWritable, BAMBDGInputFormat]("/Users/marek//Downloads/data/NA12878.ga2.exome.maq.recal.bam")
+   //.newAPIHadoopFile[LongWritable, SAMRecordWritable,BAMBDGInputFormat]("/Users/marek/data/NA12878.chrom20.ILLUMINA.bwa.CEU.low_coverage.20121211.bam")
 
     lazy val events = readsToEventsArray(alignments.map(r => r._2))
     spark.time {
-      println(alignments.count)
+     // println(alignments.count)
     }
     spark.time {
 
@@ -170,7 +170,7 @@ object CoverageMethodsMos {
     //lazy val combinedRes = combineEvents(events)
     lazy val coverage = eventsToCoverage("test", events)
     spark.time {
-     //println(coverage.count())
+     println(coverage.count())
 
     }
 
