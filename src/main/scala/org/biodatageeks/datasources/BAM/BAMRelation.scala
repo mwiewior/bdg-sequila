@@ -208,9 +208,10 @@ class BAMRelation (path:String)(@transient val sqlContext: SQLContext)
           }
         case In(attr, values) => {
           if (attr.toLowerCase == "sampleid" || attr.toLowerCase == "sample_id") {
-            values.foreach(s => samples += s.toString)
+            values.foreach(s => samples += s.toString) //FIXME: add handing multiple values for intervals
           }
         }
+
         case _ => None
       }
 
