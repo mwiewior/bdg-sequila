@@ -134,7 +134,7 @@ object CoverageMethodsMos {
 
   def main(args: Array[String]): Unit = {
     val spark = SparkSession.builder()
-     .master("local[4]")
+     .master("local[8]")
      .config("spark.driver.memory", "8g")
       .config("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
       .getOrCreate()
@@ -153,6 +153,30 @@ object CoverageMethodsMos {
       .hadoopConfiguration
       .set("hadoopbam.bam.inflate","intel_gkl")
 
+    spark
+      .read
+      .option("header", "true")  // Does the file have a header line?
+      .option("delimiter", "\t")
+      .csv("file:///Users/marek/Downloads/data/cc_pathogenic_hg19.tsv")
+      .createOrReplaceTempView("clinvar")
+
+    val clinvar = spark
+      .sql(
+        """
+          |SELECT CONCAT('chr',CHROM,':',pos,'-',pos) FROM clinvar
+        """.stripMargin)
+      .rdd
+      .map(r=>r.getString(0))
+      .collect()
+      //.take(10000)
+    //println(clinvar.mkString(","))
+
+    spark
+      .sparkContext
+      .hadoopConfiguration
+      .set("hadoopbam.bam.intervals",clinvar.mkString(","))
+
+
     //spark.sparkContext.setLogLevel("INFO")
     lazy val alignments = spark.sparkContext
       .newAPIHadoopFile[LongWritable, SAMRecordWritable, BAMBDGInputFormat]("/Users/marek//Downloads/data/NA12878.ga2.exome.maq.recal.bam")
@@ -160,7 +184,12 @@ object CoverageMethodsMos {
 
     lazy val events = readsToEventsArray(alignments.map(r => r._2))
     spark.time {
-     // println(alignments.count)
+     //println(alignments.count)
+      println(alignments
+        .map(_._2.get())
+        //.filter(r=> (r.getContig == "chr1" && r.getStart <= 10000 && r.getEnd >= 1000))
+        .count()
+      )
     }
     spark.time {
 
@@ -170,7 +199,7 @@ object CoverageMethodsMos {
     //lazy val combinedRes = combineEvents(events)
     lazy val coverage = eventsToCoverage("test", events)
     spark.time {
-     println(coverage.count())
+   //  println(coverage.count())
 
     }
 

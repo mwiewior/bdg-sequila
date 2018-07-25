@@ -8,29 +8,28 @@ import org.apache.spark.sql.{Row, SQLContext}
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.types.{IntegerType, StringType, StructField, StructType}
 import org.seqdoop.hadoop_bam.util.SAMHeaderReader
-import org.seqdoop.hadoop_bam.{BAMInputFormat, FileVirtualSplit, SAMRecordWritable}
+import org.seqdoop.hadoop_bam.{BAMBDGInputFormat, BAMInputFormat, FileVirtualSplit, SAMRecordWritable}
 
+import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
 
-case class BAMRecord(sampleId: String,
-                     contigName:String,
-                     start:Int,
-                     end:Int,
-                     cigar:String,
-                     mapq:Int,
-                     baseq: String,
-                     reference:String,
-                     flags:Int,
-                     materefind:Int)
-
-class BAMRelation (path:String)(@transient val sqlContext: SQLContext)
-  extends BaseRelation with PrunedFilteredScan with Serializable {
+case class BAMBDGRecord(sampleId: String,
+                        contigName:String,
+                        start:Int,
+                        end:Int,
+                        cigar:String,
+                        mapq:Int,
+                        baseq: String,
+                        reference:String,
+                        flags:Int,
+                        materefind:Int)
 
 
-  val spark = sqlContext
-    .sparkSession
+trait BAMBDGFileReader{
 
+
+  val confMap = new mutable.HashMap[String,String]()
   val columnNames = Array(
     "sampleId",
     "contigName",
@@ -43,6 +42,118 @@ class BAMRelation (path:String)(@transient val sqlContext: SQLContext)
     "flags",
     "materefind"
   )
+
+  private def getConf(@transient sqlContext: SQLContext) = {
+
+    val predicatePushdown = sqlContext.getConf("spark.biodatageeks.bam.predicatePushdown","false")
+    val gklInflate = sqlContext.getConf("spark.biodatageeks.bam.useGKLInflate","false")
+    confMap += ("spark.biodatageeks.bam.predicatePushdown" -> predicatePushdown)
+    confMap += ("spark.biodatageeks.bam.useGKLInflate" -> gklInflate)
+    confMap
+
+
+  }
+
+  def setConf(key:String,value:String) = confMap += (key -> value)
+  private def setHadoopConf(@transient sqlContext: SQLContext, conf: mutable.HashMap[String,String]): Unit = {
+    val conf = getConf(sqlContext)
+    val spark = sqlContext
+      .sparkSession
+    if(conf("spark.biodatageeks.bam.useGKLInflate").toBoolean)
+      spark
+        .sparkContext
+        .hadoopConfiguration
+        .set("hadoopbam.bam.inflate","intel_gkl")
+
+    conf.get("spark.biodatageeks.bam.intervals") match {
+      case Some(s) => {
+        if(conf("spark.biodatageeks.bam.predicatePushdown").toBoolean)
+        spark
+          .sparkContext
+          .hadoopConfiguration
+          .set("hadoopbam.bam.intervals", s)
+      }
+        case _ => None
+      }
+    spark
+      .sparkContext
+      .hadoopConfiguration
+      .setInt("mapred.min.split.size", (134217728).toInt)
+  }
+
+  def readBAMFile(@transient sqlContext: SQLContext, path: String) = {
+
+    val conf = getConf(sqlContext)
+    setHadoopConf(sqlContext,conf)
+
+    val spark = sqlContext
+      .sparkSession
+
+    spark.sparkContext
+      .newAPIHadoopFile[LongWritable, SAMRecordWritable, BAMBDGInputFormat](path)
+
+  }
+
+
+
+  def readBAMFileToBAMBDGRecord(@transient sqlContext: SQLContext, path: String, requiredColumns:Array[String]) = {
+
+
+    val conf = getConf(sqlContext)
+    setHadoopConf(sqlContext,conf)
+    val spark = sqlContext
+      .sparkSession
+    val alignments = spark
+      .sparkContext
+      .newAPIHadoopFile[LongWritable, SAMRecordWritable, BAMBDGInputFormat](path)
+    val alignmentsWithFileName = alignments.asInstanceOf[NewHadoopRDD[LongWritable, SAMRecordWritable]]
+      .mapPartitionsWithInputSplit((inputSplit, iterator) => {
+        val file = inputSplit.asInstanceOf[FileVirtualSplit]
+        iterator.map(tup => (file.getPath.getName.split('.')(0), tup._2))
+      }
+      )
+    val sampleAlignments = alignmentsWithFileName
+      .map(r => (r._1, r._2.get()))
+      .map { case (sampleId, r) =>
+        val record = new Array[Any](requiredColumns.length)
+        //requiredColumns.
+        for(i<- 0 to requiredColumns.length-1){
+          record(i) = getValueFromColumn(requiredColumns(i),r,sampleId)
+        }
+        Row.fromSeq(record)
+      }
+
+    sampleAlignments
+
+  }
+
+  private def getValueFromColumn(colName:String,r:SAMRecord, sampleId:String): Any = {
+
+    if(colName == columnNames(0)) sampleId
+    else if (colName == columnNames(1)) r.getContig
+    else if (colName == columnNames(2)) r.getStart
+    else if (colName == columnNames(3)) r.getEnd
+    else if (colName == columnNames(4)) r.getCigar.toString
+    else if (colName == columnNames(5)) r.getMappingQuality
+    else if (colName == columnNames(6)) r.getBaseQualityString
+    else if (colName == columnNames(7)) r.getReferenceName
+    else if (colName == columnNames(8)) r.getFlags
+    else if (colName == columnNames(9)) r.getMateReferenceIndex
+    else throw new Exception("Unknown column")
+
+  }
+
+
+}
+
+class BAMRelation (path:String)(@transient val sqlContext: SQLContext)
+  extends BaseRelation with PrunedFilteredScan with Serializable with BAMBDGFileReader {
+
+
+  val spark = sqlContext
+    .sparkSession
+
+
 
   spark
     .sparkContext
@@ -72,22 +183,45 @@ class BAMRelation (path:String)(@transient val sqlContext: SQLContext)
 
     val samples = ArrayBuffer[String]()
 
-    filters.foreach(f=>
+    val gRanges = ArrayBuffer[String]()
+    var contigName:String = ""
+    var startPos = 0
+    var endPos = 0
+    var pos = 0
 
+    filters.foreach(f=> {
       f match {
         case EqualTo(attr, value) => {
           if (attr.toLowerCase == "sampleid" || attr.toLowerCase == "sample_id")
-
-            samples+=value.toString
+            samples += value.toString
         }
+          if (attr.toLowerCase == "contigname") contigName = value.toString
+          if (attr.toLowerCase == "start" || attr.toLowerCase() == "end") { //handle predicate contigName='chr1' AND start=2345
+            pos = value.asInstanceOf[Int]
+          }
         case In(attr, values) => {
-          if (attr.toLowerCase == "sampleid" || attr.toLowerCase == "sample_id"){
-            values.foreach(s=> samples+=s.toString)
+          if (attr.toLowerCase == "sampleid" || attr.toLowerCase == "sample_id") {
+            values.foreach(s => samples += s.toString)
           }
         }
         case _ => None
       }
 
+      if (contigName != "") {
+        if (pos > 0) {
+          gRanges += s"${contigName}:${pos.toString}-${pos.toString}"
+          pos = 0
+          contigName = ""
+        }
+        else if(startPos > 0 && endPos > 0 ){
+          gRanges += s"${contigName}:${startPos.toString}-${endPos.toString}"
+          startPos = 0
+          endPos = 0
+          contigName = ""
+
+        }
+      }
+    }
 
     )
     val prunedPaths = if(samples.isEmpty) {
@@ -102,44 +236,21 @@ class BAMRelation (path:String)(@transient val sqlContext: SQLContext)
     }
     val logger =  Logger.getLogger(this.getClass.getCanonicalName)
     if(prunedPaths != path) logger.warn(s"Partition pruning detected, reading only files for samples: ${samples.mkString(",")}")
-    val alignments = spark
-      .sparkContext
-      .newAPIHadoopFile[LongWritable, SAMRecordWritable, BAMInputFormat](prunedPaths)
-    val alignmentsWithFileName = alignments.asInstanceOf[NewHadoopRDD[LongWritable, SAMRecordWritable]]
-      .mapPartitionsWithInputSplit((inputSplit, iterator) => {
-        val file = inputSplit.asInstanceOf[FileVirtualSplit]
-        iterator.map(tup => (file.getPath.getName.split('.')(0), tup._2))
+
+    if(gRanges.length > 0 ) {
+      confMap.get("spark.biodatageeks.bam.predicatePushdown") match {
+        case Some(s) if(s.toBoolean) => {
+          logger.warn(s"Interval query detected and predicate pushdown enabled, trying to do predicate pushdown using intervals ${gRanges.mkString("|")}")
+          setConf("spark.biodatageeks.bam.intervals",gRanges.mkString(","))
         }
-      )
-    val sampleAlignments = alignmentsWithFileName
-      .map(r => (r._1, r._2.get()))
-      .map { case (sampleId, r) =>
-          val record = new Array[Any](requiredColumns.length)
-          //requiredColumns.
-          for(i<- 0 to requiredColumns.length-1){
-            record(i) = getValueFromColumn(requiredColumns(i),r,sampleId)
-          }
-          Row.fromSeq(record)
+        case _ => None
       }
 
-    sampleAlignments
+    }
+      readBAMFileToBAMBDGRecord(sqlContext,prunedPaths,requiredColumns)
 
 
   }
 
-  private def getValueFromColumn(colName:String,r:SAMRecord, sampleId:String): Any = {
 
-    if(colName == columnNames(0)) sampleId
-    else if (colName == columnNames(1)) r.getContig
-    else if (colName == columnNames(2)) r.getStart
-    else if (colName == columnNames(3)) r.getEnd
-    else if (colName == columnNames(4)) r.getCigar.toString
-    else if (colName == columnNames(5)) r.getMappingQuality
-    else if (colName == columnNames(6)) r.getBaseQualityString
-    else if (colName == columnNames(7)) r.getReferenceName
-    else if (colName == columnNames(8)) r.getFlags
-    else if (colName == columnNames(9)) r.getMateReferenceIndex
-    else throw new Exception("Unknowe column")
-
-  }
 }

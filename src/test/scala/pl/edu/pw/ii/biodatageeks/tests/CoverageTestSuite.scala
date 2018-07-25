@@ -5,7 +5,7 @@ import java.io.{OutputStreamWriter, PrintWriter}
 import com.holdenkarau.spark.testing.{DataFrameSuiteBase, SharedSparkContext}
 import org.apache.spark.sql.{SequilaSession, SparkSession}
 import org.bdgenomics.utils.instrumentation.{Metrics, MetricsListener, RecordedMetrics}
-import org.biodatageeks.datasources.BAM.BAMRecord
+import org.biodatageeks.datasources.BAM.BAMBDGRecord
 import org.biodatageeks.preprocessing.coverage.CoverageStrategy
 import org.biodatageeks.utils.SequilaRegister
 import org.scalatest.{BeforeAndAfter, FunSuite}
