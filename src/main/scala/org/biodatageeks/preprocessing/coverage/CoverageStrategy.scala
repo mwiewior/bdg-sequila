@@ -97,7 +97,7 @@ case class BDGCoveragePlan(plan: LogicalPlan, spark: SparkSession, table:String,
       .mkString("/")
     println(samplePath)
 
-
+    setLocalConf(spark.sqlContext)
     lazy val alignments = readBAMFile(spark.sqlContext,samplePath)
 
     lazy val events = CoverageMethodsMos.readsToEventsArray(alignments.map(r=>r._2))

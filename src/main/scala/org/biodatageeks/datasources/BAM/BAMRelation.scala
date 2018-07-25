@@ -43,35 +43,40 @@ trait BAMBDGFileReader{
     "materefind"
   )
 
-  private def getConf(@transient sqlContext: SQLContext) = {
+  def setLocalConf(@transient sqlContext: SQLContext) = {
 
     val predicatePushdown = sqlContext.getConf("spark.biodatageeks.bam.predicatePushdown","false")
     val gklInflate = sqlContext.getConf("spark.biodatageeks.bam.useGKLInflate","false")
     confMap += ("spark.biodatageeks.bam.predicatePushdown" -> predicatePushdown)
     confMap += ("spark.biodatageeks.bam.useGKLInflate" -> gklInflate)
-    confMap
-
 
   }
 
   def setConf(key:String,value:String) = confMap += (key -> value)
-  private def setHadoopConf(@transient sqlContext: SQLContext, conf: mutable.HashMap[String,String]): Unit = {
-    val conf = getConf(sqlContext)
+
+  private def setHadoopConf(@transient sqlContext: SQLContext): Unit = {
+    setLocalConf(sqlContext)
     val spark = sqlContext
       .sparkSession
-    if(conf("spark.biodatageeks.bam.useGKLInflate").toBoolean)
+    if(confMap("spark.biodatageeks.bam.useGKLInflate").toBoolean)
       spark
         .sparkContext
         .hadoopConfiguration
         .set("hadoopbam.bam.inflate","intel_gkl")
 
-    conf.get("spark.biodatageeks.bam.intervals") match {
+    confMap.get("spark.biodatageeks.bam.intervals") match {
       case Some(s) => {
-        if(conf("spark.biodatageeks.bam.predicatePushdown").toBoolean)
+        if(s.length > 0)
         spark
           .sparkContext
           .hadoopConfiguration
           .set("hadoopbam.bam.intervals", s)
+        else
+          spark
+            .sparkContext
+            .hadoopConfiguration
+            .unset("hadoopbam.bam.intervals")
+
       }
         case _ => None
       }
@@ -83,8 +88,9 @@ trait BAMBDGFileReader{
 
   def readBAMFile(@transient sqlContext: SQLContext, path: String) = {
 
-    val conf = getConf(sqlContext)
-    setHadoopConf(sqlContext,conf)
+    setLocalConf(sqlContext)
+    setConf("spark.biodatageeks.bam.intervals","") //FIXME: disabled PP
+    setHadoopConf(sqlContext)
 
     val spark = sqlContext
       .sparkSession
@@ -99,20 +105,20 @@ trait BAMBDGFileReader{
   def readBAMFileToBAMBDGRecord(@transient sqlContext: SQLContext, path: String, requiredColumns:Array[String]) = {
 
 
-    val conf = getConf(sqlContext)
-    setHadoopConf(sqlContext,conf)
+    setLocalConf(sqlContext)
+    setHadoopConf(sqlContext)
     val spark = sqlContext
       .sparkSession
-    val alignments = spark
+    lazy val alignments = spark
       .sparkContext
       .newAPIHadoopFile[LongWritable, SAMRecordWritable, BAMBDGInputFormat](path)
-    val alignmentsWithFileName = alignments.asInstanceOf[NewHadoopRDD[LongWritable, SAMRecordWritable]]
+    lazy val alignmentsWithFileName = alignments.asInstanceOf[NewHadoopRDD[LongWritable, SAMRecordWritable]]
       .mapPartitionsWithInputSplit((inputSplit, iterator) => {
         val file = inputSplit.asInstanceOf[FileVirtualSplit]
         iterator.map(tup => (file.getPath.getName.split('.')(0), tup._2))
       }
       )
-    val sampleAlignments = alignmentsWithFileName
+    lazy val sampleAlignments = alignmentsWithFileName
       .map(r => (r._1, r._2.get()))
       .map { case (sampleId, r) =>
         val record = new Array[Any](requiredColumns.length)
@@ -122,7 +128,6 @@ trait BAMBDGFileReader{
         }
         Row.fromSeq(record)
       }
-
     sampleAlignments
 
   }
@@ -152,6 +157,8 @@ class BAMRelation (path:String)(@transient val sqlContext: SQLContext)
 
   val spark = sqlContext
     .sparkSession
+  setLocalConf(sqlContext)
+
 
 
 
@@ -237,17 +244,15 @@ class BAMRelation (path:String)(@transient val sqlContext: SQLContext)
     val logger =  Logger.getLogger(this.getClass.getCanonicalName)
     if(prunedPaths != path) logger.warn(s"Partition pruning detected, reading only files for samples: ${samples.mkString(",")}")
 
-    if(gRanges.length > 0 ) {
-      confMap.get("spark.biodatageeks.bam.predicatePushdown") match {
-        case Some(s) if(s.toBoolean) => {
+    logger.warn(s"GRanges: ${gRanges.mkString(",")}, ${spark.sqlContext.getConf("spark.biodatageeks.bam.predicatePushdown","false")}")
+    if(gRanges.length > 0  && spark.sqlContext.getConf("spark.biodatageeks.bam.predicatePushdown","false").toBoolean ) {
           logger.warn(s"Interval query detected and predicate pushdown enabled, trying to do predicate pushdown using intervals ${gRanges.mkString("|")}")
           setConf("spark.biodatageeks.bam.intervals",gRanges.mkString(","))
         }
-        case _ => None
-      }
+    else
+      setConf("spark.biodatageeks.bam.intervals","")
 
-    }
-      readBAMFileToBAMBDGRecord(sqlContext,prunedPaths,requiredColumns)
+    readBAMFileToBAMBDGRecord(sqlContext,prunedPaths,requiredColumns)
 
 
   }
