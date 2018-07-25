@@ -52,12 +52,12 @@ libraryDependencies += "org.apache.logging.log4j" % "log4j-api" % "2.11.0"
 fork := true
 fork in Test := true
 //parallelExecution in Test := false
-javaOptions in test += "-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=9999"
+//javaOptions in Test += "-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=9999"
 //javaOptions in run += "-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=9999"
 
-//javaOptions in run ++= Seq(
-//  "-Dlog4j.debug=true",
-//  "-Dlog4j.configuration=log4j.properties")
+javaOptions in Test ++= Seq(
+  "-Dlog4j.debug=false",
+  "-Dlog4j.configuration=log4j.properties")
 
 javaOptions ++= Seq("-Xms512M", "-Xmx8192M", "-XX:+CMSClassUnloadingEnabled")
 

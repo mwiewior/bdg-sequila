@@ -43,15 +43,26 @@ class BAMBDGReaderTestSuite extends FunSuite with DataFrameSuiteBase with Before
     assertDataFrameEquals(ss.createDataFrame(ss.sparkContext.parallelize(withoutPPDF),withPPDF.schema),withPPDF)
     spark.time {
       ss.sqlContext.setConf("spark.biodatageeks.bam.predicatePushdown", "false")
-      ss.sql(query).show
+      ss.sql(query).count
     }
-    spark.time {
-      ss.sqlContext.setConf("spark.biodatageeks.bam.predicatePushdown", "true")
-      ss.sql(query).show
-    }
+
+  }
+
+  test("Test interval query predicate pushdown"){
+    val ss = new SequilaSession(spark)
+    SequilaRegister.register(ss)
+    ss.sqlContext.setConf("spark.biodatageeks.bam.predicatePushdown","false")
+    val query =  """
+                   |SELECT * FROM reads WHERE contigName='chr1' AND start >= 1996 AND end <=2071
+                 """.stripMargin
+    val withoutPPDF = ss.sql(query).collect()
+
+    ss.sqlContext.setConf("spark.biodatageeks.bam.predicatePushdown","true")
+    val withPPDF = ss.sql(query)
+    assertDataFrameEquals(ss.createDataFrame(ss.sparkContext.parallelize(withoutPPDF),withPPDF.schema),withPPDF)
     spark.time {
       ss.sqlContext.setConf("spark.biodatageeks.bam.predicatePushdown", "false")
-      ss.sql(query).show
+      ss.sql(query).show(50)
     }
 
   }

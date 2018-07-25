@@ -212,6 +212,31 @@ class BAMRelation (path:String)(@transient val sqlContext: SQLContext)
           }
         }
 
+        case LessThanOrEqual(attr,value) => {
+          if(attr.toLowerCase == "start" || attr.toLowerCase == "end" ){
+            endPos = value.asInstanceOf[Int]
+          }
+        }
+
+        case LessThan(attr,value) => {
+          if(attr.toLowerCase == "start" || attr.toLowerCase == "end" ){
+            endPos = value.asInstanceOf[Int]
+          }
+        }
+
+        case GreaterThanOrEqual(attr,value) => {
+          if(attr.toLowerCase == "start" || attr.toLowerCase == "end" ){
+            startPos = value.asInstanceOf[Int]
+          }
+
+        }
+        case GreaterThan(attr,value) => {
+          if(attr.toLowerCase == "start" || attr.toLowerCase == "end" ){
+            startPos = value.asInstanceOf[Int]
+          }
+        }
+
+
         case _ => None
       }
 
