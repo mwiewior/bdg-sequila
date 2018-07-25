@@ -53,7 +53,7 @@ class BAMBDGReaderTestSuite extends FunSuite with DataFrameSuiteBase with Before
     SequilaRegister.register(ss)
     ss.sqlContext.setConf("spark.biodatageeks.bam.predicatePushdown","false")
     val query =  """
-                   |SELECT * FROM reads WHERE contigName='chr1' AND start >= 1996 AND end <=2071
+                   |SELECT * FROM reads WHERE contigName='chr1' AND start >= 1996 AND end <= 2071
                  """.stripMargin
     val withoutPPDF = ss.sql(query).collect()
 

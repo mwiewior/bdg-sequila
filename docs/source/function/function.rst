@@ -443,6 +443,49 @@ Now we rerun the query with pushing the predicates:
     Time taken: 732 ms
 
 
+Genomic itervals are also supported:
+
+.. code-block:: scala
+
+     spark.time{
+     ss.sqlContext.setConf("spark.biodatageeks.bam.predicatePushdown","false")
+      ss.sql("""SELECT count(*) FROM reads_exome
+      WHERE contigName='chr1' AND start >= 1996 AND end <= 2071""".stripMargin).show
+    }
+
+.. code-block:: bash
+
+    18/07/25 17:52:05 WARN BAMRelation: GRanges: chr1:1996-2071, false
+    +--------+
+    |count(1)|
+    +--------+
+    |       3|
+    +--------+
+
+    Time taken: 147638 ms
+
+
+.. code-block:: scala
+
+    spark.time{
+     ss.sqlContext.setConf("spark.biodatageeks.bam.predicatePushdown","true")
+      ss.sql("""SELECT count(*) FROM reads_exome
+      WHERE contigName='chr1' AND start >= 1996 AND end <= 2071""".stripMargin).show
+    }
+
+.. code-block:: bash
+
+    18/07/25 17:55:05 WARN BAMRelation: GRanges: chr1:1996-2071, true
+    18/07/25 17:55:05 WARN BAMRelation: Interval query detected and predicate pushdown enabled, trying to do predicate pushdown using intervals chr1:1996-2071
+    +--------+
+    |count(1)|
+    +--------+
+    |       3|
+    +--------+
+
+    Time taken: 401 ms
+
+
 Speeding up BAM scans using Intel Genomics Kernel Library's Inflater
 ********************************************************************
 
