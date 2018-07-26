@@ -14,16 +14,16 @@ import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
 
-case class BAMBDGRecord(sampleId: String,
-                        contigName:String,
-                        start:Int,
-                        end:Int,
-                        cigar:String,
-                        mapq:Int,
-                        baseq: String,
-                        reference:String,
-                        flags:Int,
-                        materefind:Int)
+case class BAMRecord(sampleId: String,
+                     contigName:String,
+                     start:Int,
+                     end:Int,
+                     cigar:String,
+                     mapq:Int,
+                     baseq: String,
+                     reference:String,
+                     flags:Int,
+                     materefind:Int)
 
 
 trait BAMBDGFileReader{

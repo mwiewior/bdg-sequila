@@ -443,7 +443,7 @@ Now we rerun the query with pushing the predicates:
     Time taken: 732 ms
 
 
-Genomic itervals are also supported:
+Genomic intervals are also supported:
 
 .. code-block:: scala
 
@@ -486,7 +486,7 @@ Genomic itervals are also supported:
     Time taken: 401 ms
 
 
-Speeding up BAM scans using Intel Genomics Kernel Library's Inflater
+.. Speeding up BAM scans using Intel Genomics Kernel Library's Inflater
 ********************************************************************
 
-TODO
+

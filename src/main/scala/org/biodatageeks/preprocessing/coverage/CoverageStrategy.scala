@@ -11,7 +11,7 @@ import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.encoders.ExpressionEncoder
 import org.apache.spark.unsafe.types.UTF8String
-import org.biodatageeks.datasources.BAM.{BAMBDGFileReader, BAMBDGRecord}
+import org.biodatageeks.datasources.BAM.{BAMBDGFileReader, BAMRecord}
 import org.biodatageeks.preprocessing.coverage.CoverageReadFunctions._
 import org.seqdoop.hadoop_bam.{BAMInputFormat, SAMRecordWritable}
 
@@ -33,7 +33,7 @@ case class CoveragePlan(plan: LogicalPlan, spark: SparkSession, table:String, ou
   def doExecute(): org.apache.spark.rdd.RDD[InternalRow] = {
     import spark.implicits._
     val ds = spark.sql(s"select * FROM ${table}")
-      .as[BAMBDGRecord]
+      .as[BAMRecord]
       .filter(r=>r.contigName != null)
     val schema = plan.schema
     val cov = ds.rdd.baseCoverage(None,Some(4),sorted=false)
@@ -55,7 +55,7 @@ case class CoverageHistPlan(plan: LogicalPlan, spark: SparkSession, table:String
   def doExecute(): org.apache.spark.rdd.RDD[InternalRow] = {
     import spark.implicits._
     val ds = spark.sql(s"select * FROM ${table}")
-      .as[BAMBDGRecord]
+      .as[BAMRecord]
       .filter(r=>r.contigName != null)
     val schema = plan.schema
     val params = CoverageHistParam(CoverageHistType.MAPQ,Array(0,1,2,3,50))
