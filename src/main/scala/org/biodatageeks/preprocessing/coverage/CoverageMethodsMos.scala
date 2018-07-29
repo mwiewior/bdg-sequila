@@ -94,15 +94,15 @@ object CoverageMethodsMos {
         }
         println(s" max cigar length: ${cigarMap.toString()}")
         lazy val output = contigEventsMap
-          .mapValues(r=>
+          .map(r=>
           {
             var maxIndex = 0
             var i = 0
-            while(i < r._1.length ){
-              if(r._1(i) != 0) maxIndex = i
+            while(i < r._2._1.length ){
+              if(r._2._1(i) != 0) maxIndex = i
               i +=1
             }
-            (r._1.slice(0,maxIndex+1),r._2,r._2+maxIndex,r._4) //
+            (r._1,(r._2._1.slice(0,maxIndex+1),r._2._2,r._2._2+maxIndex,r._2._4,s"${r._1}_${r._2._2+maxIndex}") )//
           }
           )
         output
@@ -117,16 +117,17 @@ object CoverageMethodsMos {
 
   }
 
-  private def persistPartEdges(contigName:String, maxCigarLength:Int, cov: ((Array[Short],Int,Int,Int)) ) = {
+  private def persistPartEdges(contigName:String, maxCigarLength:Int, cov: ((Array[Short],Int,Int,Int,String)) ) = {
     Class.forName("org.apache.ignite.IgniteJdbcThinDriver")
     val conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1")
     val batchSize = 1000
-    val startPos = cov._3 - maxCigarLength
+    val startPos = cov._3 - maxCigarLength + 1
     val covArray = cov._1.takeRight(maxCigarLength)
+    val partKey = cov._5
     val sqlInsert =
       """
-        |INSERT INTO coverage(contig_name,pos,cov)
-        |VALUES (?,?,?)
+        |INSERT INTO coverage(contig_name,pos,cov,part_key)
+        |VALUES (?,?,?,?)
       """.stripMargin
     val ps = conn.prepareStatement(sqlInsert)
     var i = 0
@@ -135,6 +136,7 @@ object CoverageMethodsMos {
       ps.setString(1,contigName)
       ps.setInt(2, startPos + i)
       ps.setInt(3,covArray(i))
+      ps.setString(4,partKey)
 
       ps.addBatch()
       i+=1
@@ -149,6 +151,26 @@ object CoverageMethodsMos {
 
   }
 
+  private def mergePartEdge(cov: Array[Short],contigName:String,minPos:Int, maxPos: Int, partKey:String) ={
+    Class.forName("org.apache.ignite.IgniteJdbcThinDriver")
+    val conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1")
+    val stmt = conn.createStatement()
+    val query =
+      s"""
+        |SELECT pos, cov
+        |FROM coverage
+        |WHERE contig_name='${contigName}'
+        |AND pos>=${minPos} AND pos<=${maxPos}
+        |AND part_key <>'${partKey}'
+      """.stripMargin
+
+      val rs = stmt.executeQuery(query)
+      while(rs.next()){
+        cov(rs.getInt("pos") - minPos) = (cov(rs.getInt("pos") - minPos) + rs.getInt("cov")).toShort
+      }
+
+
+  }
   def reduceEventsArray(covEvents: RDD[(String,(Array[Short],Int,Int,Int))]) =  {
     //a:(Array[Short],Int,Int,Int) => (covEvents,startPos,maxPos,contigLength)
     covEvents.reduceByKey((a,b)=> mergeArrays(a,b))
@@ -200,6 +222,7 @@ object CoverageMethodsMos {
         |contig_name VARCHAR,
         |pos INT,
         |cov SMALLINT,
+        |part_key VARCHAR,
         |PRIMARY KEY (contig_name, pos)
         |)
       """.stripMargin

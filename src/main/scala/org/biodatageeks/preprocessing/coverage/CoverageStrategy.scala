@@ -23,7 +23,7 @@ class CoverageStrategy(spark: SparkSession) extends Strategy with Serializable  
 
     case Coverage(tableName,output) => CoveragePlan(plan,spark,tableName,output) :: Nil
     case CoverageHist(tableName,output) => CoverageHistPlan(plan,spark,tableName,output) :: Nil
-    case BDGCoverage(tableName,sampleId,output) => BDGCoveragePlan(plan,spark,tableName,sampleId,output) :: Nil
+    case BDGCoverage(tableName,sampleId,method,output) => BDGCoveragePlan(plan,spark,tableName,sampleId,method,output) :: Nil
     case _ => Nil
   }
 
@@ -82,7 +82,7 @@ case class CoverageHistPlan(plan: LogicalPlan, spark: SparkSession, table:String
 
 
 
-case class BDGCoveragePlan(plan: LogicalPlan, spark: SparkSession, table:String,sampleId:String, output: Seq[Attribute])
+case class BDGCoveragePlan(plan: LogicalPlan, spark: SparkSession, table:String,sampleId:String, method: String, output: Seq[Attribute])
   extends SparkPlan with Serializable  with BAMBDGFileReader {
   def doExecute(): org.apache.spark.rdd.RDD[InternalRow] = {
     val schema = plan.schema
@@ -102,8 +102,12 @@ case class BDGCoveragePlan(plan: LogicalPlan, spark: SparkSession, table:String,
     lazy val alignments = readBAMFile(spark.sqlContext,samplePath)
 
     lazy val events = CoverageMethodsMos.readsToEventsArray(alignments.map(r=>r._2))
-    lazy val reducedEvents = CoverageMethodsMos.reduceEventsArray(events)
-    lazy val cov = CoverageMethodsMos.eventsToCoverage(sampleId,events)
+    lazy val reducedEvents = method.toLowerCase match {
+      case "mosdepth" => CoverageMethodsMos.reduceEventsArray (events.mapValues (r => (r._1, r._2, r._3, r._4) ) )
+      case "bdg" =>  CoverageMethodsMos.reduceEventsArray (events.mapValues (r => (r._1, r._2, r._3, r._4) ) )
+      case _ => throw new Exception("Unsupported coverage method")
+    }
+    lazy val cov = CoverageMethodsMos.eventsToCoverage(sampleId,reducedEvents)
     cov
       .mapPartitions(p=>{
         val proj =  UnsafeProjection.create(schema)
