@@ -15,7 +15,7 @@ import org.biodatageeks.datasources.BAM.{BAMBDGFileReader, BAMRecord}
 import org.biodatageeks.preprocessing.coverage.CoverageReadFunctions._
 import org.seqdoop.hadoop_bam.{BAMInputFormat, SAMRecordWritable}
 
-import scala.collection.mutable
+
 
 
 class CoverageStrategy(spark: SparkSession) extends Strategy with Serializable  {
@@ -98,9 +98,11 @@ case class BDGCoveragePlan(plan: LogicalPlan, spark: SparkSession, table:String,
     println(samplePath)
 
     setLocalConf(spark.sqlContext)
+    CoverageMethodsMos.initInMemoryGrid()
     lazy val alignments = readBAMFile(spark.sqlContext,samplePath)
 
     lazy val events = CoverageMethodsMos.readsToEventsArray(alignments.map(r=>r._2))
+    lazy val reducedEvents = CoverageMethodsMos.reduceEventsArray(events)
     lazy val cov = CoverageMethodsMos.eventsToCoverage(sampleId,events)
     cov
       .mapPartitions(p=>{

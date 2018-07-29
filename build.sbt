@@ -45,8 +45,12 @@ libraryDependencies += "ch.cern.sparkmeasure" %% "spark-measure" % "0.11"
 
 //libraryDependencies += "pl.edu.pw.ii.zsibio" % "common-routines_2.11" % "0.1-SNAPSHOT"
 libraryDependencies += "org.broadinstitute" % "gatk-native-bindings" % "1.0.0"
-libraryDependencies += "org.apache.logging.log4j" % "log4j-core" % "2.11.0"
-libraryDependencies += "org.apache.logging.log4j" % "log4j-api" % "2.11.0"
+//libraryDependencies += "org.apache.logging.log4j" % "log4j-core" % "2.11.0"
+//libraryDependencies += "org.apache.logging.log4j" % "log4j-api" % "2.11.0"
+
+libraryDependencies += "org.apache.ignite" % "ignite-core" % "2.5.0"
+
+libraryDependencies += "org.apache.ignite" % "ignite-indexing" % "2.5.0"
 
 
 fork := true

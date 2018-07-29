@@ -1,6 +1,7 @@
 package org.biodatageeks.preprocessing.coverage
 
 import java.io.File
+import java.sql.DriverManager
 
 import htsjdk.samtools.{BAMFileReader, CigarOperator, SamReaderFactory, ValidationStringency}
 import org.apache.hadoop.io.LongWritable
@@ -16,6 +17,9 @@ import htsjdk.samtools._
 import htsjdk.samtools.util.zip.InflaterFactory
 import java.util.zip.Inflater
 
+import scala.collection.mutable
+
+import org.apache.ignite.{Ignite, IgniteCache, Ignition}
 
 case class CovRecord(contigName:String,start:Int,end:Int, cov:Short)
 
@@ -53,8 +57,8 @@ object CoverageMethodsMos {
         val contigLengthMap = new mutable.HashMap[String, Int]()
         val contigEventsMap = new mutable.HashMap[String, (Array[Short],Int,Int,Int)]()
         val contigStartStopPartMap = new mutable.HashMap[(String),Int]()
-        //var lastContig: String = null
-        //var lastPosition = 0
+        val cigarMap = new mutable.HashMap[String, Int]()
+        //var maxCigarLength = 0
         while(p.hasNext){
           val r = p.next()
           val read = r.get()
@@ -66,13 +70,16 @@ object CoverageMethodsMos {
               contigLengthMap += contig -> contigLength
               contigEventsMap += contig -> (new Array[Short](contigLength-read.getStart+10), read.getStart,contigLength-1, contigLength)
               contigStartStopPartMap += s"${contig}_start" -> read.getStart
+              cigarMap += contig -> 0
             }
             val cigarIterator = read.getCigar.iterator()
             var position = read.getStart
             //val contigLength = contigLengthMap(contig)
+            var currCigarLength = 0
             while(cigarIterator.hasNext){
               val cigarElement = cigarIterator.next()
               val cigarOpLength = cigarElement.getLength
+              currCigarLength += cigarOpLength
               val cigarOp = cigarElement.getOperator
               if (cigarOp == CigarOperator.M || cigarOp == CigarOperator.X || cigarOp == CigarOperator.EQ) {
                 eventOp(position,contigStartStopPartMap(s"${contig}_start"),contig,contigEventsMap,true) //Fixme: use variable insteaad of lookup to a map
@@ -81,10 +88,12 @@ object CoverageMethodsMos {
               }
               else  if (cigarOp == CigarOperator.N || cigarOp == CigarOperator.D) position += cigarOpLength
             }
+            if(currCigarLength > cigarMap(contig)) cigarMap(contig) = currCigarLength
 
           }
         }
-        contigEventsMap
+        println(s" max cigar length: ${cigarMap.toString()}")
+        lazy val output = contigEventsMap
           .mapValues(r=>
           {
             var maxIndex = 0
@@ -93,12 +102,60 @@ object CoverageMethodsMos {
               if(r._1(i) != 0) maxIndex = i
               i +=1
             }
-            (r._1.slice(0,maxIndex+1),r._2,r._2+maxIndex,r._4)
+            (r._1.slice(0,maxIndex+1),r._2,r._2+maxIndex,r._4) //
           }
-          ).iterator
-    }.reduceByKey((a,b)=> mergeArrays(a,b))
+          )
+        output
+          .foreach{
+            r=>
+              {
+                persistPartEdges(r._1,cigarMap(r._1),r._2)
+              }
+          }
+        output.iterator
+    }
 
   }
+
+  private def persistPartEdges(contigName:String, maxCigarLength:Int, cov: ((Array[Short],Int,Int,Int)) ) = {
+    Class.forName("org.apache.ignite.IgniteJdbcThinDriver")
+    val conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1")
+    val batchSize = 1000
+    val startPos = cov._3 - maxCigarLength
+    val covArray = cov._1.takeRight(maxCigarLength)
+    val sqlInsert =
+      """
+        |INSERT INTO coverage(contig_name,pos,cov)
+        |VALUES (?,?,?)
+      """.stripMargin
+    val ps = conn.prepareStatement(sqlInsert)
+    var i = 0
+    while(i < covArray.length){
+
+      ps.setString(1,contigName)
+      ps.setInt(2, startPos + i)
+      ps.setInt(3,covArray(i))
+
+      ps.addBatch()
+      i+=1
+      if(i % batchSize == 0)
+        ps.executeBatch()
+
+    }
+    ps.executeBatch()
+
+
+
+
+  }
+
+  def reduceEventsArray(covEvents: RDD[(String,(Array[Short],Int,Int,Int))]) =  {
+    //a:(Array[Short],Int,Int,Int) => (covEvents,startPos,maxPos,contigLength)
+    covEvents.reduceByKey((a,b)=> mergeArrays(a,b))
+  }
+
+
+
 
   def eventsToCoverage(sampleId:String,events: RDD[(String,(Array[Short],Int,Int,Int))]) = {
     events
@@ -132,6 +189,28 @@ object CoverageMethodsMos {
   }
 
 
+  def initInMemoryGrid() ={
+    Class.forName("org.apache.ignite.IgniteJdbcThinDriver")
+    val conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1")
+    val stmt = conn.createStatement()
+
+    val ddlCreate =
+      """
+        |CREATE TABLE IF NOT EXISTS coverage (
+        |contig_name VARCHAR,
+        |pos INT,
+        |cov SMALLINT,
+        |PRIMARY KEY (contig_name, pos)
+        |)
+      """.stripMargin
+  val ddlDrop =
+    """
+      |DROP TABLE IF EXISTS coverage
+    """.stripMargin
+    stmt.executeUpdate(ddlDrop)
+    stmt.executeUpdate(ddlCreate)
+
+  }
 
 
 
