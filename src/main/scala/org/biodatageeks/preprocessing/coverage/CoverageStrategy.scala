@@ -121,8 +121,9 @@ case class BDGCoveragePlan(plan: LogicalPlan, spark: SparkSession, table:String,
               val covToUpdate = c._2._1.takeRight(maxCigarLength)
               val minPos = c._2._2
               val maxPos = c._2._3
+              val startPoint = maxPos - maxCigarLength
               val contigName = c._1
-              val right = RightCovEdge(contigName, minPos, covToUpdate)
+              val right = RightCovEdge(contigName,minPos,startPoint, covToUpdate)
               val left = ContigRange(contigName, minPos, maxPos)
               val cu = new CovUpdate(ArrayBuffer(right), ArrayBuffer(left))
               acc.add(cu)
@@ -131,12 +132,46 @@ case class BDGCoveragePlan(plan: LogicalPlan, spark: SparkSession, table:String,
         acc
           .value()
           .right
-          .foreach(r=>println(s"${r.contigName},${r.minPos},${r.cov.length}"))
+          .foreach(r=>println(s"${r.contigName},${r.minPos},${r.startPoint},${r.cov.length}"))
 
         acc
           .value()
           .left
           .foreach(r=>println(s"${r.contigName},${r.minPos},${r.maxPos}"))
+
+
+
+        def prepareBroadcast(a: CovUpdate) = {
+          val contigRanges = a.left
+          val updateArray = a.right
+          val updateMap = new mutable.HashMap[(String,Int),(Array[Short])]()
+          val shrinkMap =  new mutable.HashMap[(String,Int),(Int)]()
+          contigRanges.foreach{
+            c =>
+              val upd = updateArray
+                .filter(f=> (f.startPoint + f.cov.length > c.minPos) && f.minPos < c.minPos)
+                .headOption //should be always 1 or 0 elements
+              upd match {
+                case Some(u)  => {
+                  val overlapLength = (u.startPoint + u.cov.length) - c.minPos
+                  shrinkMap += (u.contigName, u.minPos) -> (c.minPos - u.minPos)
+                  updateMap += (c.contigName, c.minPos) -> (u.cov.take(overlapLength))
+                }
+                case None => None
+              }
+
+          }
+
+          (updateMap, shrinkMap)
+        }
+
+        val b = prepareBroadcast(acc.value())
+
+        b._1.foreach(r => println(s"${r._1.toString()}, ${r._2.length}"))
+
+        b._2.foreach(r => println(s"${r._1},${r._2}"))
+
+
         CoverageMethodsMos.reduceEventsArray(events.mapValues(r => (r._1, r._2, r._3, r._4)))
       }
       case _ => throw new Exception("Unsupported coverage method")
