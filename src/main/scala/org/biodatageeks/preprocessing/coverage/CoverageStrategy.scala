@@ -117,7 +117,7 @@ case class BDGCoveragePlan(plan: LogicalPlan, spark: SparkSession, table:String,
           .register(acc, "CoverageAcc")
 
         events
-          .persist(StorageLevel.MEMORY_AND_DISK_SER)
+          .persist(StorageLevel.MEMORY_AND_DISK)
           .foreach{
             c => {
               val maxCigarLength = c._2._5
