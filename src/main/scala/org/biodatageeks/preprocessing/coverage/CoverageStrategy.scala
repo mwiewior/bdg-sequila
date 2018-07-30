@@ -10,6 +10,7 @@ import org.apache.spark.sql.execution.SparkPlan
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.encoders.ExpressionEncoder
+import org.apache.spark.storage.StorageLevel
 import org.apache.spark.unsafe.types.UTF8String
 import org.apache.spark.util.AccumulatorV2
 import org.biodatageeks.datasources.BAM.{BAMBDGFileReader, BAMRecord}
@@ -116,7 +117,7 @@ case class BDGCoveragePlan(plan: LogicalPlan, spark: SparkSession, table:String,
           .register(acc, "CoverageAcc")
 
         events
-          .cache()
+          .persist(StorageLevel.MEMORY_AND_DISK_SER)
           .foreach{
             c => {
               val maxCigarLength = c._2._5
