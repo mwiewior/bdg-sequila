@@ -53,6 +53,7 @@ object CoverageMethodsMos {
         val contigLengthMap = new mutable.HashMap[String, Int]()
         val contigEventsMap = new mutable.HashMap[String, (Array[Short],Int,Int,Int)]()
         val contigStartStopPartMap = new mutable.HashMap[(String),Int]()
+        val cigarMap = new mutable.HashMap[String, Int]()
         //var lastContig: String = null
         //var lastPosition = 0
         while(p.hasNext){
@@ -66,10 +67,12 @@ object CoverageMethodsMos {
               contigLengthMap += contig -> contigLength
               contigEventsMap += contig -> (new Array[Short](contigLength-read.getStart+10), read.getStart,contigLength-1, contigLength)
               contigStartStopPartMap += s"${contig}_start" -> read.getStart
+              cigarMap += contig -> 0
             }
             val cigarIterator = read.getCigar.iterator()
             var position = read.getStart
             //val contigLength = contigLengthMap(contig)
+            var currCigarLength = 0
             while(cigarIterator.hasNext){
               val cigarElement = cigarIterator.next()
               val cigarOpLength = cigarElement.getLength
@@ -81,23 +84,30 @@ object CoverageMethodsMos {
               }
               else  if (cigarOp == CigarOperator.N || cigarOp == CigarOperator.D) position += cigarOpLength
             }
+            if(currCigarLength > cigarMap(contig)) cigarMap(contig) = currCigarLength
+
 
           }
         }
-        contigEventsMap
-          .mapValues(r=>
+        lazy val output = contigEventsMap
+          .map(r=>
           {
             var maxIndex = 0
             var i = 0
-            while(i < r._1.length ){
-              if(r._1(i) != 0) maxIndex = i
+            while(i < r._2._1.length ){
+              if(r._2._1(i) != 0) maxIndex = i
               i +=1
             }
-            (r._1.slice(0,maxIndex+1),r._2,r._2+maxIndex,r._4)
+            (r._1,(r._2._1.slice(0,maxIndex+1),r._2._2,r._2._2+maxIndex,r._2._4,s"${r._1}_${r._2._2+maxIndex}") )//
           }
-          ).iterator
-    }.reduceByKey((a,b)=> mergeArrays(a,b))
+          )
+        output.iterator
+    }
 
+  }
+
+  def reduceEventsArray(covEvents: RDD[(String,(Array[Short],Int,Int,Int))]) =  {
+    covEvents.reduceByKey((a,b)=> mergeArrays(a,b))
   }
 
   def eventsToCoverage(sampleId:String,events: RDD[(String,(Array[Short],Int,Int,Int))]) = {

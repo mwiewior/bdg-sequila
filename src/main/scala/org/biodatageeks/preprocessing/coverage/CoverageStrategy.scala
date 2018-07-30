@@ -101,7 +101,15 @@ case class BDGCoveragePlan(plan: LogicalPlan, spark: SparkSession, table:String,
     lazy val alignments = readBAMFile(spark.sqlContext,samplePath)
 
     lazy val events = CoverageMethodsMos.readsToEventsArray(alignments.map(r=>r._2))
-    lazy val cov = CoverageMethodsMos.eventsToCoverage(sampleId,events)
+    lazy val reducedEvents = method.toLowerCase match {
+      case "mosdepth" => CoverageMethodsMos.reduceEventsArray(events.mapValues(r => (r._1, r._2, r._3, r._4)))
+      //case "bdg" =>  CoverageMethodsMos.reduceEventsArray (events.mapValues (r => (r._1, r._2, r._3, r._4) ) )
+      case "bdg" => {
+        CoverageMethodsMos.reduceEventsArray(events.mapValues(r => (r._1, r._2, r._3, r._4)))
+      }
+      case _ => throw new Exception("Unsupported coverage method")
+    }
+    lazy val cov = CoverageMethodsMos.eventsToCoverage(sampleId,reducedEvents)
     cov
       .mapPartitions(p=>{
         val proj =  UnsafeProjection.create(schema)
