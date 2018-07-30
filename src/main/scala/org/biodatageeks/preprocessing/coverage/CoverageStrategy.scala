@@ -11,11 +11,13 @@ import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.encoders.ExpressionEncoder
 import org.apache.spark.unsafe.types.UTF8String
+import org.apache.spark.util.AccumulatorV2
 import org.biodatageeks.datasources.BAM.{BAMBDGFileReader, BAMRecord}
 import org.biodatageeks.preprocessing.coverage.CoverageReadFunctions._
 import org.seqdoop.hadoop_bam.{BAMInputFormat, SAMRecordWritable}
 
 import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
 
 
 class CoverageStrategy(spark: SparkSession) extends Strategy with Serializable  {
@@ -82,6 +84,7 @@ case class CoverageHistPlan(plan: LogicalPlan, spark: SparkSession, table:String
 
 
 
+
 case class BDGCoveragePlan(plan: LogicalPlan, spark: SparkSession, table:String,sampleId:String, method: String, output: Seq[Attribute])
   extends SparkPlan with Serializable  with BAMBDGFileReader {
   def doExecute(): org.apache.spark.rdd.RDD[InternalRow] = {
@@ -105,6 +108,35 @@ case class BDGCoveragePlan(plan: LogicalPlan, spark: SparkSession, table:String,
       case "mosdepth" => CoverageMethodsMos.reduceEventsArray(events.mapValues(r => (r._1, r._2, r._3, r._4)))
       //case "bdg" =>  CoverageMethodsMos.reduceEventsArray (events.mapValues (r => (r._1, r._2, r._3, r._4) ) )
       case "bdg" => {
+        val covUpdate = new CovUpdate(new ArrayBuffer[RightCovEdge](),new ArrayBuffer[ContigRange]())
+        val acc = new CoverageAccumulatorV2(covUpdate)
+        spark
+          .sparkContext
+          .register(acc, "CoverageAcc")
+        events
+          .cache()
+          .foreach{
+            c => {
+              val maxCigarLength = c._2._5
+              val covToUpdate = c._2._1.takeRight(maxCigarLength)
+              val minPos = c._2._2
+              val maxPos = c._2._3
+              val contigName = c._1
+              val right = RightCovEdge(contigName, minPos, covToUpdate)
+              val left = ContigRange(contigName, minPos, maxPos)
+              val cu = new CovUpdate(ArrayBuffer(right), ArrayBuffer(left))
+              acc.add(cu)
+            }
+          }
+        acc
+          .value()
+          .right
+          .foreach(r=>println(s"${r.contigName},${r.minPos},${r.cov.length}"))
+
+        acc
+          .value()
+          .left
+          .foreach(r=>println(s"${r.contigName},${r.minPos},${r.maxPos}"))
         CoverageMethodsMos.reduceEventsArray(events.mapValues(r => (r._1, r._2, r._3, r._4)))
       }
       case _ => throw new Exception("Unsupported coverage method")

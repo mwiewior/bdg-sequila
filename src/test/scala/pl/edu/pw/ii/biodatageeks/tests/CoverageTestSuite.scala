@@ -62,7 +62,7 @@ class CoverageTestSuite extends FunSuite with DataFrameSuiteBase with BeforeAndA
   test("BAM - bdg_coverage - show"){
     val session: SparkSession = SequilaSession(spark)
     SequilaRegister.register(session)
-    session.sql(s"SELECT * FROM bdg_coverage('${tableNameBAM}','NA12878','mosdepth')").show(5)
+    session.sql(s"SELECT * FROM bdg_coverage('${tableNameBAM}','NA12878','bdg')").show(5)
 
 
   }

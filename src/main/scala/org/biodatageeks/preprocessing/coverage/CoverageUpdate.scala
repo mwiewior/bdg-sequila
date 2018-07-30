@@ -19,29 +19,28 @@ class CovUpdate(var right:ArrayBuffer[RightCovEdge],var left: ArrayBuffer[Contig
     return this
   }
 
-  object CoverageAccumulatorV2 extends AccumulatorV2[CovUpdate, CovUpdate] {
-    private val covAcc = new CovUpdate(new ArrayBuffer[RightCovEdge](),new ArrayBuffer[ContigRange]())
+}
 
-    def reset(): Unit = {
-      covAcc.reset()
-    }
+class CoverageAccumulatorV2(var covAcc: CovUpdate) extends AccumulatorV2[CovUpdate, CovUpdate] {
+  //private val covAcc = new CovUpdate(new ArrayBuffer[RightCovEdge](),new ArrayBuffer[ContigRange]())
 
-    def add(v: CovUpdate): Unit = {
-      covAcc.add(v)
-    }
-    def value():CovUpdate = {
-      return covAcc
-    }
-    def isZero(): Boolean = {
-      return (covAcc.right.isEmpty && covAcc.left.isEmpty)
-    }
-    def copy():AccumulatorV2[CovUpdate, CovUpdate] = {
-      return CoverageAccumulatorV2
-    }
-    def merge(other:AccumulatorV2[CovUpdate, CovUpdate]) = {
-      covAcc.add(other.value)
-    }
+  def reset(): Unit = {
+    covAcc =  new CovUpdate(new ArrayBuffer[RightCovEdge](),new ArrayBuffer[ContigRange]())
   }
 
-
+  def add(v: CovUpdate): Unit = {
+    covAcc.add(v)
+  }
+  def value():CovUpdate = {
+    return covAcc
+  }
+  def isZero(): Boolean = {
+    return (covAcc.right.isEmpty && covAcc.left.isEmpty)
+  }
+  def copy():CoverageAccumulatorV2 = {
+    return new CoverageAccumulatorV2 (covAcc)
+  }
+  def merge(other:AccumulatorV2[CovUpdate, CovUpdate]) = {
+    covAcc.add(other.value)
+  }
 }

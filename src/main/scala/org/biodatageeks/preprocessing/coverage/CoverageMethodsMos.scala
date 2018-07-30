@@ -76,6 +76,7 @@ object CoverageMethodsMos {
             while(cigarIterator.hasNext){
               val cigarElement = cigarIterator.next()
               val cigarOpLength = cigarElement.getLength
+              currCigarLength += cigarOpLength
               val cigarOp = cigarElement.getOperator
               if (cigarOp == CigarOperator.M || cigarOp == CigarOperator.X || cigarOp == CigarOperator.EQ) {
                 eventOp(position,contigStartStopPartMap(s"${contig}_start"),contig,contigEventsMap,true) //Fixme: use variable insteaad of lookup to a map
@@ -98,7 +99,7 @@ object CoverageMethodsMos {
               if(r._2._1(i) != 0) maxIndex = i
               i +=1
             }
-            (r._1,(r._2._1.slice(0,maxIndex+1),r._2._2,r._2._2+maxIndex,r._2._4,s"${r._1}_${r._2._2+maxIndex}") )//
+            (r._1,(r._2._1.slice(0,maxIndex+1),r._2._2,r._2._2+maxIndex,r._2._4,cigarMap(r._1)) )// add max cigarLength
           }
           )
         output.iterator
@@ -140,6 +141,7 @@ object CoverageMethodsMos {
       })
     }.flatMap(r=>r)
   }
+
 
 
 
