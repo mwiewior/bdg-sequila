@@ -151,10 +151,16 @@ object CoverageMethodsMos {
 
   }
 
-  private def mergePartEdge(cov: Array[Short],contigName:String,minPos:Int, maxPos: Int, partKey:String) ={
+  def mergePartEdge(c:(String,(Array[Short],Int,Int,Int,String)) ) ={
     Class.forName("org.apache.ignite.IgniteJdbcThinDriver")
     val conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1")
     val stmt = conn.createStatement()
+    val contigName = c._1
+    val minPos = c._2._2
+    val maxPos = c._2._3
+    val contigLength = c._2._4
+    val partKey = c._2._5
+    val cov = c._2._1
     val query =
       s"""
         |SELECT pos, cov
@@ -165,12 +171,75 @@ object CoverageMethodsMos {
       """.stripMargin
 
       val rs = stmt.executeQuery(query)
+      var cnt = 0
+    //add overlaping reads from other partitions
       while(rs.next()){
-        cov(rs.getInt("pos") - minPos) = (cov(rs.getInt("pos") - minPos) + rs.getInt("cov")).toShort
+        cov(rs.getInt("pos") - minPos) = ( cov(rs.getInt("pos") - minPos) + rs.getInt("cov")).toShort
+        cnt += 1
       }
+      println(s"${partKey} updated ${cnt} positions")
+
+      //delete rows that were already fetched and added
+      val deleteStmt =
+        s"""
+          |DELETE FROM coverage
+          |WHERE
+          |part_key<>'${partKey}'
+          |AND contig_name='${contigName}'
+          |AND
+          |pos>=${minPos} AND pos<=${maxPos}
+        """.stripMargin
+
+        stmt.executeUpdate(deleteStmt)
+        //conn.commit()
+    val query2 =
+        s"""
+           |SELECT max(pos) as maxpos
+           |FROM coverage
+           |WHERE contig_name='${contigName}'
+           |AND pos>=${minPos} AND pos<=${maxPos}
+           |AND part_key ='${partKey}'
+    """.stripMargin
+    var maxRemainPos = Int.MaxValue
+    val rs2 = stmt.executeQuery(query2)
+    while(maxRemainPos < maxPos) {
+      while (rs2.next()) {
+        maxRemainPos = rs2.getInt("maxpos")
+      }
+      if(maxRemainPos < maxPos) Thread.sleep(100)
+    }
+    println(s"${partKey} maxPos after merge ${maxRemainPos}")
+    (contigName,(cov.take(maxRemainPos-minPos),minPos,maxRemainPos,contigLength))
 
 
   }
+//  def shrinkPart(c:(String,(Array[Short],Int,Int,Int,String)) ) ={
+//    Class.forName("org.apache.ignite.IgniteJdbcThinDriver")
+//    val conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1")
+//    val stmt = conn.createStatement()
+//    val contigName = c._1
+//    val minPos = c._2._2
+//    val maxPos = c._2._3
+//    val contigLength = c._2._4
+//    val partKey = c._2._5
+//    val cov = c._2._1
+//    val query =
+//      s"""
+//         |SELECT max(pos) as maxpos
+//         |FROM coverage
+//         |WHERE contig_name='${contigName}'
+//         |AND pos>=${minPos} AND pos<=${maxPos}
+//         |AND part_key ='${partKey}'
+//      """.stripMargin
+//    var maxRemainPos = 0
+//    val rs = stmt.executeQuery(query)
+//    while(rs.next()){
+//      maxRemainPos = rs.getInt("maxpos")
+//    }
+//    println(s"${partKey} maxPos after merge ${maxRemainPos}")
+//    (contigName,(cov.take(maxRemainPos-minPos),minPos,maxRemainPos,contigLength))
+//
+//  }
   def reduceEventsArray(covEvents: RDD[(String,(Array[Short],Int,Int,Int))]) =  {
     //a:(Array[Short],Int,Int,Int) => (covEvents,startPos,maxPos,contigLength)
     covEvents.reduceByKey((a,b)=> mergeArrays(a,b))
