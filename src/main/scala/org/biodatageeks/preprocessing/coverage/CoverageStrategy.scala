@@ -23,7 +23,7 @@ class CoverageStrategy(spark: SparkSession) extends Strategy with Serializable  
 
     case Coverage(tableName,output) => CoveragePlan(plan,spark,tableName,output) :: Nil
     case CoverageHist(tableName,output) => CoverageHistPlan(plan,spark,tableName,output) :: Nil
-    case BDGCoverage(tableName,sampleId,output) => BDGCoveragePlan(plan,spark,tableName,sampleId,output) :: Nil
+    case BDGCoverage(tableName,sampleId,method,output) => BDGCoveragePlan(plan,spark,tableName,sampleId,method,output) :: Nil
     case _ => Nil
   }
 
@@ -82,7 +82,7 @@ case class CoverageHistPlan(plan: LogicalPlan, spark: SparkSession, table:String
 
 
 
-case class BDGCoveragePlan(plan: LogicalPlan, spark: SparkSession, table:String,sampleId:String, output: Seq[Attribute])
+case class BDGCoveragePlan(plan: LogicalPlan, spark: SparkSession, table:String,sampleId:String, method: String, output: Seq[Attribute])
   extends SparkPlan with Serializable  with BAMBDGFileReader {
   def doExecute(): org.apache.spark.rdd.RDD[InternalRow] = {
     val schema = plan.schema
