@@ -84,6 +84,7 @@ case class CoverageHistPlan(plan: LogicalPlan, spark: SparkSession, table:String
 
 
 
+case class UpdateStruct(upd:mutable.HashMap[(String,Int),(Array[Short])], shrink:mutable.HashMap[(String,Int),(Int)])
 
 case class BDGCoveragePlan(plan: LogicalPlan, spark: SparkSession, table:String,sampleId:String, method: String, output: Seq[Attribute])
   extends SparkPlan with Serializable  with BAMBDGFileReader {
@@ -113,6 +114,7 @@ case class BDGCoveragePlan(plan: LogicalPlan, spark: SparkSession, table:String,
         spark
           .sparkContext
           .register(acc, "CoverageAcc")
+
         events
           .cache()
           .foreach{
@@ -129,16 +131,15 @@ case class BDGCoveragePlan(plan: LogicalPlan, spark: SparkSession, table:String,
               acc.add(cu)
             }
           }
-        acc
-          .value()
-          .right
-          .foreach(r=>println(s"${r.contigName},${r.minPos},${r.startPoint},${r.cov.length}"))
-
-        acc
-          .value()
-          .left
-          .foreach(r=>println(s"${r.contigName},${r.minPos},${r.maxPos}"))
-
+//        acc
+//          .value()
+//          .right
+//          .foreach(r=>println(s"${r.contigName},${r.minPos},${r.startPoint},${r.cov.length}"))
+//
+//        acc
+//          .value()
+//          .left
+//          .foreach(r=>println(s"${r.contigName},${r.minPos},${r.maxPos}"))
 
 
         def prepareBroadcast(a: CovUpdate) = {
@@ -162,17 +163,18 @@ case class BDGCoveragePlan(plan: LogicalPlan, spark: SparkSession, table:String,
 
           }
 
-          (updateMap, shrinkMap)
+          UpdateStruct(updateMap, shrinkMap)
         }
 
-        val b = prepareBroadcast(acc.value())
-
-        b._1.foreach(r => println(s"${r._1.toString()}, ${r._2.length}"))
-
-        b._2.foreach(r => println(s"${r._1},${r._2}"))
+        val covBroad = spark.sparkContext.broadcast(prepareBroadcast(acc.value()))
 
 
-        CoverageMethodsMos.reduceEventsArray(events.mapValues(r => (r._1, r._2, r._3, r._4)))
+//        covBroad.value.upd.foreach(r => println(s"${r._1.toString()}, ${r._2.length}"))
+//
+//        covBroad.value.shrink.foreach(r => println(s"${r._1},${r._2}"))
+
+         CoverageMethodsMos.upateContigRange(covBroad,events)
+        //CoverageMethodsMos.reduceEventsArray(events.mapValues(r => (r._1, r._2, r._3, r._4)))
       }
       case _ => throw new Exception("Unsupported coverage method")
     }

@@ -11,6 +11,7 @@ import org.seqdoop.hadoop_bam.util.SAMHeaderReader
 
 import scala.collection.mutable
 import htsjdk.samtools._
+import org.apache.spark.broadcast.Broadcast
 //import com.intel.gkl.compression._
 
 import htsjdk.samtools.util.zip.InflaterFactory
@@ -140,6 +141,37 @@ object CoverageMethodsMos {
         result.take(ind).iterator
       })
     }.flatMap(r=>r)
+  }
+
+  //contigName,covArray,minPos,maxPos,contigLenth,maxCigarLength
+  def upateContigRange(b:Broadcast[UpdateStruct],covEvents: RDD[(String,(Array[Short],Int,Int,Int,Int))]) = {
+   covEvents.map{
+     c => {
+       val upd = b.value.upd
+       val shrink = b.value.shrink
+
+       val updArray = upd.get( (c._1,c._2._2) ) match {
+         case Some(a) => {
+           var i = 0
+           while(i < a.length){
+             c._2._1(i) =  ( c._2._1(i) + a(i) ).toShort
+             i += 1
+           }
+           c._2._1
+         }
+         case None => c._2._1
+       }
+       val shrinkArray = shrink.get( (c._1, c._2._2) ) match {
+         case Some(len) => {
+            updArray.take(len)
+         }
+         case None => updArray
+       }
+
+       (c._1, (shrinkArray,c._2._2,c._2._3,c._2._4) )
+     }
+
+   }
   }
 
 
