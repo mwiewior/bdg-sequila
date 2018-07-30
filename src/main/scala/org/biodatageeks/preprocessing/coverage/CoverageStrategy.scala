@@ -175,6 +175,7 @@ case class BDGCoveragePlan(plan: LogicalPlan, spark: SparkSession, table:String,
 //        covBroad.value.shrink.foreach(r => println(s"${r._1},${r._2}"))
 
          CoverageMethodsMos.upateContigRange(covBroad,events)
+        events.unpersist()
         //CoverageMethodsMos.reduceEventsArray(events.mapValues(r => (r._1, r._2, r._3, r._4)))
       }
       case _ => throw new Exception("Unsupported coverage method")
