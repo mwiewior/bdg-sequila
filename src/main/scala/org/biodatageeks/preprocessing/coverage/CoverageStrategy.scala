@@ -90,6 +90,11 @@ case class UpdateStruct(upd:mutable.HashMap[(String,Int),(Array[Short])], shrink
 case class BDGCoveragePlan(plan: LogicalPlan, spark: SparkSession, table:String,sampleId:String, method: String, output: Seq[Attribute])
   extends SparkPlan with Serializable  with BAMBDGFileReader {
   def doExecute(): org.apache.spark.rdd.RDD[InternalRow] = {
+
+    spark
+      .sparkContext
+      .getPersistentRDDs
+        .foreach(_._2.unpersist()) //FIXME: add filtering not all RDDs
     val schema = plan.schema
     val catalog = spark.sessionState.catalog
     val tId = spark.sessionState.sqlParser.parseTableIdentifier(table)
