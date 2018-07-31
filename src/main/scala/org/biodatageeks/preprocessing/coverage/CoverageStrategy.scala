@@ -85,7 +85,7 @@ case class CoverageHistPlan(plan: LogicalPlan, spark: SparkSession, table:String
 
 
 
-case class UpdateStruct(upd:mutable.HashMap[(String,Int),(Array[Short],Short)], shrink:mutable.HashMap[(String,Int),(Int)])
+case class UpdateStruct(upd:mutable.HashMap[(String,Int),(Option[Array[Short]],Short)], shrink:mutable.HashMap[(String,Int),(Int)])
 
 case class BDGCoveragePlan(plan: LogicalPlan, spark: SparkSession, table:String,sampleId:String, method: String, output: Seq[Attribute])
   extends SparkPlan with Serializable  with BAMBDGFileReader {
@@ -151,24 +151,27 @@ case class BDGCoveragePlan(plan: LogicalPlan, spark: SparkSession, table:String,
         def prepareBroadcast(a: CovUpdate) = {
           val contigRanges = a.left
           val updateArray = a.right
-          val updateMap = new mutable.HashMap[(String,Int),(Array[Short],Short)]()
+          val updateMap = new mutable.HashMap[(String,Int),(Option[Array[Short]],Short)]()
           val shrinkMap =  new mutable.HashMap[(String,Int),(Int)]()
           contigRanges.foreach{
             c =>
               val upd = updateArray
-                .filter(f=> (f.contigName==c.contigName && f.startPoint + f.cov.length > c.minPos) && f.minPos < c.minPos)
+                .filter(f=> (f.contigName == c.contigName && f.startPoint + f.cov.length > c.minPos) && f.minPos < c.minPos)
                 .headOption //should be always 1 or 0 elements
-              val cumSum = updateArray
-                .filter(f => f.contigName==c.contigName && f.minPos < c.minPos)
+              val cumSum = updateArray //cumSum of all contigRanges lt current contigRange
+                .filter(f => f.contigName == c.contigName && f.minPos < c.minPos)
                 .map(_.cumSum)
                 .sum
               upd match {
                 case Some(u)  => {
                   val overlapLength = (u.startPoint + u.cov.length) - c.minPos
                   shrinkMap += (u.contigName, u.minPos) -> (c.minPos - u.minPos)
-                  updateMap += (c.contigName, c.minPos) -> (u.cov.take(overlapLength), (cumSum - u.cov.take(overlapLength).sum).toShort)
+                  updateMap += (c.contigName, c.minPos) -> (Some(u.cov.take(overlapLength)), (cumSum - u.cov.take(overlapLength).sum).toShort)
                 }
-                case None => None
+                case None => {
+                  updateMap += (c.contigName, c.minPos) -> (None, cumSum)
+
+                }
               }
 
           }
