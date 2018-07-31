@@ -3,7 +3,7 @@ package org.biodatageeks.preprocessing.coverage
 import scala.collection.mutable.ArrayBuffer
 import org.apache.spark.util.AccumulatorV2
 
-case class RightCovEdge(contigName:String,minPos:Int,startPoint:Int,cov:Array[Short])
+case class RightCovEdge(contigName:String,minPos:Int,startPoint:Int,cov:Array[Short], cumSum:Short)
 
 case class ContigRange(contigName:String, minPos: Int, maxPos:Int)
 class CovUpdate(var right:ArrayBuffer[RightCovEdge],var left: ArrayBuffer[ContigRange]) extends Serializable {

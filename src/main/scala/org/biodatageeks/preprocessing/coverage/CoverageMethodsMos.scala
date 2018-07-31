@@ -153,8 +153,9 @@ object CoverageMethodsMos {
        val updArray = upd.get( (c._1,c._2._2) ) match {
          case Some(a) => {
            var i = 0
-           while(i < a.length){
-             c._2._1(i) =  ( c._2._1(i) + a(i) ).toShort
+           while(i < a._1.length){
+             c._2._1(i) =  ( c._2._1(i) + a._1(i) ).toShort
+             if(i == 0) c._2._1(0) = (c._2._1(0) + a._2).toShort
              i += 1
            }
            c._2._1
