@@ -100,12 +100,10 @@ case class BDGCoveragePlan(plan: LogicalPlan, spark: SparkSession, table:String,
     val tId = spark.sessionState.sqlParser.parseTableIdentifier(table)
     val sampleTable = catalog.getTableMetadata(tId)
     val samplePath = (sampleTable
-      .location
-      .getPath
+      .location.toString
       .split('/')
       .dropRight(1) ++ Array(s"${sampleId}*.bam"))
       .mkString("/")
-    println(samplePath)
 
     setLocalConf(spark.sqlContext)
     lazy val alignments = readBAMFile(spark.sqlContext,samplePath)
@@ -113,14 +111,12 @@ case class BDGCoveragePlan(plan: LogicalPlan, spark: SparkSession, table:String,
     lazy val events = CoverageMethodsMos.readsToEventsArray(alignments.map(r=>r._2))
     lazy val reducedEvents = method.toLowerCase match {
       case "mosdepth" => CoverageMethodsMos.reduceEventsArray(events.mapValues(r => (r._1, r._2, r._3, r._4)))
-      //case "bdg" =>  CoverageMethodsMos.reduceEventsArray (events.mapValues (r => (r._1, r._2, r._3, r._4) ) )
       case "bdg" => {
         val covUpdate = new CovUpdate(new ArrayBuffer[RightCovEdge](),new ArrayBuffer[ContigRange]())
         val acc = new CoverageAccumulatorV2(covUpdate)
         spark
           .sparkContext
           .register(acc, "CoverageAcc")
-
         events
           .persist(StorageLevel.MEMORY_AND_DISK)
           .foreach{
@@ -137,15 +133,15 @@ case class BDGCoveragePlan(plan: LogicalPlan, spark: SparkSession, table:String,
               acc.add(cu)
             }
           }
-        acc
-          .value()
-          .right
-          .foreach(r=>println(s"${r.contigName},${r.minPos},${r.startPoint},${r.cov.length}, ${r.cumSum}"))
-
-        acc
-          .value()
-          .left
-          .foreach(r=>println(s"${r.contigName},${r.minPos},${r.maxPos}"))
+//        acc
+//          .value()
+//          .right
+//          .foreach(r=>println(s"${r.contigName},${r.minPos},${r.startPoint},${r.cov.length}, ${r.cumSum}"))
+//
+//        acc
+//          .value()
+//          .left
+//          .foreach(r=>println(s"${r.contigName},${r.minPos},${r.maxPos}"))
 
 
         def prepareBroadcast(a: CovUpdate) = {
@@ -164,9 +160,9 @@ case class BDGCoveragePlan(plan: LogicalPlan, spark: SparkSession, table:String,
                 .sum
               upd match {
                 case Some(u)  => {
-                  val overlapLength = (u.startPoint + u.cov.length) - c.minPos
-                  shrinkMap += (u.contigName, u.minPos) -> (c.minPos - u.minPos)
-                  updateMap += (c.contigName, c.minPos) -> (Some(u.cov.take(overlapLength)), (cumSum - u.cov.take(overlapLength).sum).toShort)
+                  val overlapLength = (u.startPoint + u.cov.length) - c.minPos + 1
+                  shrinkMap += (u.contigName, u.minPos) -> (c.minPos - u.minPos +1 )
+                  updateMap += (c.contigName, c.minPos) -> (Some(u.cov.takeRight(overlapLength)), (cumSum - u.cov.takeRight(overlapLength).sum).toShort)
                 }
                 case None => {
                   updateMap += (c.contigName, c.minPos) -> (None, cumSum)
@@ -181,14 +177,8 @@ case class BDGCoveragePlan(plan: LogicalPlan, spark: SparkSession, table:String,
 
         val covBroad = spark.sparkContext.broadcast(prepareBroadcast(acc.value()))
 
-
-//        covBroad.value.upd.foreach(r => println(s"${r._1.toString()}, ${r._2.length}"))
-//
-//        covBroad.value.shrink.foreach(r => println(s"${r._1},${r._2}"))
-
          CoverageMethodsMos.upateContigRange(covBroad,events)
 
-        //CoverageMethodsMos.reduceEventsArray(events.mapValues(r => (r._1, r._2, r._3, r._4)))
       }
       case _ => throw new Exception("Unsupported coverage method")
     }
