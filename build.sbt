@@ -50,6 +50,9 @@ libraryDependencies += "org.apache.logging.log4j" % "log4j-api" % "2.11.0"
 libraryDependencies += "com.intel.gkl" % "gkl" % "0.8.5-1-darwin-SNAPSHOT"
 libraryDependencies += "com.intel.gkl" % "gkl" % "0.8.5-1-linux-SNAPSHOT"
 
+libraryDependencies += "org.hammerlab.bam" %% "load" % "1.2.0-M1"
+
+
 
 
 fork := true

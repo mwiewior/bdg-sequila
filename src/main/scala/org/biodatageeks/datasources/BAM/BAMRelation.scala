@@ -1,6 +1,9 @@
 package org.biodatageeks.datasources.BAM
 
+import java.net.URI
+
 import htsjdk.samtools.{SAMRecord, ValidationStringency}
+import org.apache.hadoop.fs.{FileSystem}
 import org.apache.hadoop.io.LongWritable
 import org.apache.log4j.Logger
 import org.apache.spark.rdd.{NewHadoopRDD, RDD}
@@ -100,11 +103,25 @@ trait BAMBDGFileReader{
     setConf("spark.biodatageeks.bam.intervals","") //FIXME: disabled PP
     setHadoopConf(sqlContext)
 
+
     val spark = sqlContext
       .sparkSession
+    val fs = FileSystem.get(spark.sparkContext.hadoopConfiguration)
+    val statuses = fs.globStatus(new org.apache.hadoop.fs.Path(path))
+    val resolvedPath = statuses.head.getPath.toString
+    println(resolvedPath)
+    if(!spark.sqlContext.getConf("spark.biodatageeks.bam.useSparkBAM","false").toBoolean)
+      spark.sparkContext
+        .newAPIHadoopFile[LongWritable, SAMRecordWritable, BAMBDGInputFormat](path)
+        .map(r => r._2.get())
+    else{
+      import spark_bam._, hammerlab.path._
+      val bamPath = Path(resolvedPath)
+      spark
+        .sparkContext
+        .loadReads(bamPath)
+    }
 
-    spark.sparkContext
-      .newAPIHadoopFile[LongWritable, SAMRecordWritable, BAMBDGInputFormat](path)
 
   }
 
