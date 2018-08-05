@@ -212,98 +212,121 @@ class BAMRelation (path:String)(@transient val sqlContext: SQLContext)
 
   override def buildScan(requiredColumns:Array[String], filters:Array[Filter]): RDD[Row] = {
 
+    val logger = Logger.getLogger(this.getClass.getCanonicalName)
 
-    val samples = ArrayBuffer[String]()
+    //optimization if only sampleId column is referenced
+  if(requiredColumns.length == 1 && (requiredColumns.head.toLowerCase == "sampleid"
+    || requiredColumns.head.toLowerCase == "sample_id")){
 
-    val gRanges = ArrayBuffer[String]()
-    var contigName:String = ""
-    var startPos = 0
-    var endPos = 0
-    var pos = 0
-
-    filters.foreach(f=> {
-      f match {
-        case EqualTo(attr, value) => {
-          if (attr.toLowerCase == "sampleid" || attr.toLowerCase == "sample_id")
-            samples += value.toString
-        }
-          if (attr.toLowerCase == "contigname") contigName = value.toString
-          if (attr.toLowerCase == "start" || attr.toLowerCase() == "end") { //handle predicate contigName='chr1' AND start=2345
-            pos = value.asInstanceOf[Int]
-          }
-        case In(attr, values) => {
-          if (attr.toLowerCase == "sampleid" || attr.toLowerCase == "sample_id") {
-            values.foreach(s => samples += s.toString) //FIXME: add handing multiple values for intervals
-          }
-        }
-
-        case LessThanOrEqual(attr,value) => {
-          if(attr.toLowerCase == "start" || attr.toLowerCase == "end" ){
-            endPos = value.asInstanceOf[Int]
-          }
-        }
-
-        case LessThan(attr,value) => {
-          if(attr.toLowerCase == "start" || attr.toLowerCase == "end" ){
-            endPos = value.asInstanceOf[Int]
-          }
-        }
-
-        case GreaterThanOrEqual(attr,value) => {
-          if(attr.toLowerCase == "start" || attr.toLowerCase == "end" ){
-            startPos = value.asInstanceOf[Int]
-          }
-
-        }
-        case GreaterThan(attr,value) => {
-          if(attr.toLowerCase == "start" || attr.toLowerCase == "end" ){
-            startPos = value.asInstanceOf[Int]
-          }
-        }
-
-
-        case _ => None
-      }
-
-      if (contigName != "") {
-        if (pos > 0) {
-          gRanges += s"${contigName}:${pos.toString}-${pos.toString}"
-          pos = 0
-          contigName = ""
-        }
-        else if(startPos > 0 && endPos > 0 ){
-          gRanges += s"${contigName}:${startPos.toString}-${endPos.toString}"
-          startPos = 0
-          endPos = 0
-          contigName = ""
-
-        }
-      }
-    }
-
+    val fs = FileSystem.get(spark.sparkContext.hadoopConfiguration)
+    val statuses = fs.globStatus(new org.apache.hadoop.fs.Path(path))
+    logger.warn("Only sampleId column is referenced, skipping BAM files reading.")
+    statuses.foreach(r=>println(r.getPath.toString))
+    spark
+      .sparkContext
+      .parallelize(
+      statuses
+        .map(r=>
+          Row.fromSeq(Seq(r.getPath
+          .toString
+          .split('/')
+          .takeRight(1)(0)
+            .split('.')(0)) )
     )
-    val prunedPaths = if(samples.isEmpty) {
-      path
-    }
-    else{
-      val parent = path.split('/').dropRight(1)
-      samples.map{
-        s => s"${parent.mkString("/")}/${s}*.bam"
-      }
-        .mkString(",")
-    }
-    val logger =  Logger.getLogger(this.getClass.getCanonicalName)
-    if(prunedPaths != path) logger.warn(s"Partition pruning detected, reading only files for samples: ${samples.mkString(",")}")
+   )
+  }
+    else {
+      val samples = ArrayBuffer[String]()
 
-    logger.warn(s"GRanges: ${gRanges.mkString(",")}, ${spark.sqlContext.getConf("spark.biodatageeks.bam.predicatePushdown","false")}")
-    if(gRanges.length > 0  && spark.sqlContext.getConf("spark.biodatageeks.bam.predicatePushdown","false").toBoolean ) {
-          logger.warn(s"Interval query detected and predicate pushdown enabled, trying to do predicate pushdown using intervals ${gRanges.mkString("|")}")
-          setConf("spark.biodatageeks.bam.intervals",gRanges.mkString(","))
+      val gRanges = ArrayBuffer[String]()
+      var contigName: String = ""
+      var startPos = 0
+      var endPos = 0
+      var pos = 0
+
+      filters.foreach(f => {
+        f match {
+          case EqualTo(attr, value) => {
+            if (attr.toLowerCase == "sampleid" || attr.toLowerCase == "sample_id")
+              samples += value.toString
+          }
+            if (attr.toLowerCase == "contigname") contigName = value.toString
+            if (attr.toLowerCase == "start" || attr.toLowerCase() == "end") { //handle predicate contigName='chr1' AND start=2345
+              pos = value.asInstanceOf[Int]
+            }
+          case In(attr, values) => {
+            if (attr.toLowerCase == "sampleid" || attr.toLowerCase == "sample_id") {
+              values.foreach(s => samples += s.toString) //FIXME: add handing multiple values for intervals
+            }
+          }
+
+          case LessThanOrEqual(attr, value) => {
+            if (attr.toLowerCase == "start" || attr.toLowerCase == "end") {
+              endPos = value.asInstanceOf[Int]
+            }
+          }
+
+          case LessThan(attr, value) => {
+            if (attr.toLowerCase == "start" || attr.toLowerCase == "end") {
+              endPos = value.asInstanceOf[Int]
+            }
+          }
+
+          case GreaterThanOrEqual(attr, value) => {
+            if (attr.toLowerCase == "start" || attr.toLowerCase == "end") {
+              startPos = value.asInstanceOf[Int]
+            }
+
+          }
+          case GreaterThan(attr, value) => {
+            if (attr.toLowerCase == "start" || attr.toLowerCase == "end") {
+              startPos = value.asInstanceOf[Int]
+            }
+          }
+
+
+          case _ => None
         }
-    else
-      setConf("spark.biodatageeks.bam.intervals","")
 
-    readBAMFileToBAMBDGRecord(sqlContext,prunedPaths,requiredColumns)
+        if (contigName != "") {
+          if (pos > 0) {
+            gRanges += s"${contigName}:${pos.toString}-${pos.toString}"
+            pos = 0
+            contigName = ""
+          }
+          else if (startPos > 0 && endPos > 0) {
+            gRanges += s"${contigName}:${startPos.toString}-${endPos.toString}"
+            startPos = 0
+            endPos = 0
+            contigName = ""
+
+          }
+        }
+      }
+
+      )
+      val prunedPaths = if (samples.isEmpty) {
+        path
+      }
+      else {
+        val parent = path.split('/').dropRight(1)
+        samples.map {
+          s => s"${parent.mkString("/")}/${s}*.bam"
+        }
+          .mkString(",")
+      }
+      if (prunedPaths != path) logger.warn(s"Partition pruning detected, reading only files for samples: ${samples.mkString(",")}")
+
+      logger.warn(s"GRanges: ${gRanges.mkString(",")}, ${spark.sqlContext.getConf("spark.biodatageeks.bam.predicatePushdown", "false")}")
+      if (gRanges.length > 0 && spark.sqlContext.getConf("spark.biodatageeks.bam.predicatePushdown", "false").toBoolean) {
+        logger.warn(s"Interval query detected and predicate pushdown enabled, trying to do predicate pushdown using intervals ${gRanges.mkString("|")}")
+        setConf("spark.biodatageeks.bam.intervals", gRanges.mkString(","))
+      }
+      else
+        setConf("spark.biodatageeks.bam.intervals", "")
+
+      readBAMFileToBAMBDGRecord(sqlContext, prunedPaths, requiredColumns)
+    }
 
 
   }

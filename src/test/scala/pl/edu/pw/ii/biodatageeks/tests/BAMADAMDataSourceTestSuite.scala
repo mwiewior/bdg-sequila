@@ -96,6 +96,12 @@ class BAMADAMDataSourceTestSuite extends FunSuite with DataFrameSuiteBase with B
       .count === 3172L)
   }
 
+  test("BAM - select only sampleId"){
+    assert(spark
+      .sql(s"SELECT distinct sampleId FROM ${tableNameBAM}")
+      .first().getString(0) == "NA12878")
+  }
+
   after{
     spark.sql(s"DROP TABLE IF EXISTS  ${tableNameBAM}")
     writer.flush()
