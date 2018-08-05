@@ -214,8 +214,8 @@ class BAMRelation (path:String)(@transient val sqlContext: SQLContext)
 
     val logger = Logger.getLogger(this.getClass.getCanonicalName)
 
-    //optimization if only sampleId column is referenced
-  if(requiredColumns.length == 1 && (requiredColumns.head.toLowerCase == "sampleid"
+    //optimization if only sampleId column is referenced, does not work for count(*) so rolling back
+/*  if(requiredColumns.length == 1 && (requiredColumns.head.toLowerCase == "sampleid"
     || requiredColumns.head.toLowerCase == "sample_id")){
 
     val fs = FileSystem.get(spark.sparkContext.hadoopConfiguration)
@@ -234,8 +234,8 @@ class BAMRelation (path:String)(@transient val sqlContext: SQLContext)
             .split('.')(0)) )
     )
    )
-  }
-    else {
+  }*/
+    //else {
       val samples = ArrayBuffer[String]()
 
       val gRanges = ArrayBuffer[String]()
@@ -329,7 +329,7 @@ class BAMRelation (path:String)(@transient val sqlContext: SQLContext)
     }
 
 
-  }
+  //}
 
 
 }

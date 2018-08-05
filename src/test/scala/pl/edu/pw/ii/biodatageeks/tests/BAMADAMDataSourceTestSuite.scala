@@ -98,7 +98,7 @@ class BAMADAMDataSourceTestSuite extends FunSuite with DataFrameSuiteBase with B
 
   test("BAM - select only sampleId"){
     assert(spark
-      .sql(s"SELECT distinct sampleId FROM ${tableNameBAM}")
+      .sql(s"SELECT distinct sampleId FROM ${tableNameBAM} order by sampleId")
       .first().getString(0) == "NA12878")
   }
 
