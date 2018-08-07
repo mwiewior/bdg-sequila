@@ -13,7 +13,7 @@ import org.apache.spark.sql.catalyst.encoders.ExpressionEncoder
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.unsafe.types.UTF8String
 import org.apache.spark.util.AccumulatorV2
-import org.biodatageeks.datasources.BAM.{BAMBDGFileReader, BAMRecord}
+import org.biodatageeks.datasources.BAM.{BDGAlignFileReader, BDGSAMRecord}
 import org.biodatageeks.preprocessing.coverage.CoverageReadFunctions._
 import org.seqdoop.hadoop_bam.{BAMBDGInputFormat, BAMInputFormat, SAMRecordWritable}
 
@@ -37,7 +37,7 @@ case class CoveragePlan(plan: LogicalPlan, spark: SparkSession, table:String, ou
   def doExecute(): org.apache.spark.rdd.RDD[InternalRow] = {
     import spark.implicits._
     val ds = spark.sql(s"select * FROM ${table}")
-      .as[BAMRecord]
+      .as[BDGSAMRecord]
       .filter(r=>r.contigName != null)
     val schema = plan.schema
     val cov = ds.rdd.baseCoverage(None,Some(4),sorted=false)
@@ -59,7 +59,7 @@ case class CoverageHistPlan(plan: LogicalPlan, spark: SparkSession, table:String
   def doExecute(): org.apache.spark.rdd.RDD[InternalRow] = {
     import spark.implicits._
     val ds = spark.sql(s"select * FROM ${table}")
-      .as[BAMRecord]
+      .as[BDGSAMRecord]
       .filter(r=>r.contigName != null)
     val schema = plan.schema
     val params = CoverageHistParam(CoverageHistType.MAPQ,Array(0,1,2,3,50))
@@ -90,7 +90,7 @@ case class UpdateStruct(upd:mutable.HashMap[(String,Int),(Option[Array[Short]],S
 
 case class BDGCoveragePlan [T<:BAMBDGInputFormat](plan: LogicalPlan, spark: SparkSession,
                                                   table:String, sampleId:String, method: String, output: Seq[Attribute])(implicit c: ClassTag[T])
-  extends SparkPlan with Serializable  with BAMBDGFileReader [T]{
+  extends SparkPlan with Serializable  with BDGAlignFileReader [T]{
   def doExecute(): org.apache.spark.rdd.RDD[InternalRow] = {
 
     spark

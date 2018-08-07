@@ -19,7 +19,7 @@ import scala.collection.mutable.ArrayBuffer
 import scala.reflect.ClassTag
 
 
-case class BAMRecord(sampleId: String,
+case class BDGSAMRecord(sampleId: String,
                      contigName:String,
                      start:Int,
                      end:Int,
@@ -31,7 +31,7 @@ case class BAMRecord(sampleId: String,
                      materefind:Int)
 
 
-trait BAMBDGFileReader [T <: BDGAlignInputFormat]{
+trait BDGAlignFileReader [T <: BDGAlignInputFormat]{
 
 
   val confMap = new mutable.HashMap[String,String]()
@@ -179,7 +179,7 @@ trait BAMBDGFileReader [T <: BDGAlignInputFormat]{
 }
 
 class BAMRelation[T <:BDGAlignInputFormat] (path:String)(@transient val sqlContext: SQLContext)(implicit c: ClassTag[T])
-  extends BaseRelation with PrunedFilteredScan with Serializable with BAMBDGFileReader[T] {
+  extends BaseRelation with PrunedFilteredScan with Serializable with BDGAlignFileReader[T] {
 
 
   val spark = sqlContext
