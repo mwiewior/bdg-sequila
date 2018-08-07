@@ -87,8 +87,8 @@ case class CoverageHistPlan(plan: LogicalPlan, spark: SparkSession, table:String
 
 case class UpdateStruct(upd:mutable.HashMap[(String,Int),(Option[Array[Short]],Short)], shrink:mutable.HashMap[(String,Int),(Int)])
 
-case class BDGCoveragePlan(plan: LogicalPlan, spark: SparkSession, table:String,sampleId:String, method: String, output: Seq[Attribute])
-  extends SparkPlan with Serializable  with BAMBDGFileReader {
+case class BDGCoveragePlan [T](plan: LogicalPlan, spark: SparkSession, table:String,sampleId:String, method: String, output: Seq[Attribute])
+  extends SparkPlan with Serializable  with BAMBDGFileReader [T]{
   def doExecute(): org.apache.spark.rdd.RDD[InternalRow] = {
 
     spark

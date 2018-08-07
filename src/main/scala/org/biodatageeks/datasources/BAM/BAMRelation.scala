@@ -29,7 +29,7 @@ case class BAMRecord(sampleId: String,
                      materefind:Int)
 
 
-trait BAMBDGFileReader{
+trait BAMBDGFileReader [T]{
 
 
   val confMap = new mutable.HashMap[String,String]()
@@ -176,8 +176,8 @@ trait BAMBDGFileReader{
 
 }
 
-class BAMRelation (path:String)(@transient val sqlContext: SQLContext)
-  extends BaseRelation with PrunedFilteredScan with Serializable with BAMBDGFileReader {
+class BAMRelation[T] (path:String)(@transient val sqlContext: SQLContext)
+  extends BaseRelation with PrunedFilteredScan with Serializable with BAMBDGFileReader[T] {
 
 
   val spark = sqlContext
