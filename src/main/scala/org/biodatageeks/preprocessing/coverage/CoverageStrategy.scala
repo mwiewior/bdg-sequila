@@ -15,10 +15,11 @@ import org.apache.spark.unsafe.types.UTF8String
 import org.apache.spark.util.AccumulatorV2
 import org.biodatageeks.datasources.BAM.{BAMBDGFileReader, BAMRecord}
 import org.biodatageeks.preprocessing.coverage.CoverageReadFunctions._
-import org.seqdoop.hadoop_bam.{BAMInputFormat, SAMRecordWritable}
+import org.seqdoop.hadoop_bam.{BAMBDGInputFormat, BAMInputFormat, SAMRecordWritable}
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
+import scala.reflect.ClassTag
 
 
 class CoverageStrategy(spark: SparkSession) extends Strategy with Serializable  {
@@ -26,7 +27,7 @@ class CoverageStrategy(spark: SparkSession) extends Strategy with Serializable  
 
     case Coverage(tableName,output) => CoveragePlan(plan,spark,tableName,output) :: Nil
     case CoverageHist(tableName,output) => CoverageHistPlan(plan,spark,tableName,output) :: Nil
-    case BDGCoverage(tableName,sampleId,method,output) => BDGCoveragePlan(plan,spark,tableName,sampleId,method,output) :: Nil
+    case BDGCoverage(tableName,sampleId,method,output) => BDGCoveragePlan[BAMBDGInputFormat](plan,spark,tableName,sampleId,method,output) :: Nil
     case _ => Nil
   }
 
@@ -87,7 +88,8 @@ case class CoverageHistPlan(plan: LogicalPlan, spark: SparkSession, table:String
 
 case class UpdateStruct(upd:mutable.HashMap[(String,Int),(Option[Array[Short]],Short)], shrink:mutable.HashMap[(String,Int),(Int)])
 
-case class BDGCoveragePlan [T](plan: LogicalPlan, spark: SparkSession, table:String,sampleId:String, method: String, output: Seq[Attribute])
+case class BDGCoveragePlan [T<:BAMBDGInputFormat](plan: LogicalPlan, spark: SparkSession,
+                                                  table:String, sampleId:String, method: String, output: Seq[Attribute])(implicit c: ClassTag[T])
   extends SparkPlan with Serializable  with BAMBDGFileReader [T]{
   def doExecute(): org.apache.spark.rdd.RDD[InternalRow] = {
 

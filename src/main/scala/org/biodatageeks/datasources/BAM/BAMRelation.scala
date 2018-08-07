@@ -3,18 +3,20 @@ package org.biodatageeks.datasources.BAM
 import java.net.URI
 
 import htsjdk.samtools.{SAMRecord, ValidationStringency}
-import org.apache.hadoop.fs.{FileSystem}
+import org.apache.hadoop.fs.FileSystem
 import org.apache.hadoop.io.LongWritable
 import org.apache.log4j.Logger
 import org.apache.spark.rdd.{NewHadoopRDD, RDD}
 import org.apache.spark.sql.{Row, SQLContext}
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.types.{IntegerType, StringType, StructField, StructType}
+import org.biodatageeks.inputformats.BDGAlignInputFormat
 import org.seqdoop.hadoop_bam.util.SAMHeaderReader
 import org.seqdoop.hadoop_bam.{BAMBDGInputFormat, BAMInputFormat, FileVirtualSplit, SAMRecordWritable}
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
+import scala.reflect.ClassTag
 
 
 case class BAMRecord(sampleId: String,
@@ -29,7 +31,7 @@ case class BAMRecord(sampleId: String,
                      materefind:Int)
 
 
-trait BAMBDGFileReader [T]{
+trait BAMBDGFileReader [T <: BDGAlignInputFormat]{
 
 
   val confMap = new mutable.HashMap[String,String]()
@@ -97,7 +99,7 @@ trait BAMBDGFileReader [T]{
       .hadoopConfiguration.set(SAMHeaderReader.VALIDATION_STRINGENCY_PROPERTY, ValidationStringency.SILENT.toString)
   }
 
-  def readBAMFile(@transient sqlContext: SQLContext, path: String) = {
+  def readBAMFile(@transient sqlContext: SQLContext, path: String)(implicit c: ClassTag[T]) = {
 
     setLocalConf(sqlContext)
     setConf("spark.biodatageeks.bam.intervals","") //FIXME: disabled PP
@@ -112,7 +114,7 @@ trait BAMBDGFileReader [T]{
     println(resolvedPath)
     if(!spark.sqlContext.getConf("spark.biodatageeks.bam.useSparkBAM","false").toBoolean)
       spark.sparkContext
-        .newAPIHadoopFile[LongWritable, SAMRecordWritable, BAMBDGInputFormat](path)
+        .newAPIHadoopFile[LongWritable, SAMRecordWritable, T](path)
         .map(r => r._2.get())
     else{
       import spark_bam._, hammerlab.path._
@@ -127,7 +129,7 @@ trait BAMBDGFileReader [T]{
 
 
 
-  def readBAMFileToBAMBDGRecord(@transient sqlContext: SQLContext, path: String, requiredColumns:Array[String]) = {
+  def readBAMFileToBAMBDGRecord(@transient sqlContext: SQLContext, path: String, requiredColumns:Array[String])(implicit c: ClassTag[T]) = {
 
 
     setLocalConf(sqlContext)
@@ -136,7 +138,7 @@ trait BAMBDGFileReader [T]{
       .sparkSession
     lazy val alignments = spark
       .sparkContext
-      .newAPIHadoopFile[LongWritable, SAMRecordWritable, BAMBDGInputFormat](path)
+      .newAPIHadoopFile[LongWritable, SAMRecordWritable, T](path)
     lazy val alignmentsWithFileName = alignments.asInstanceOf[NewHadoopRDD[LongWritable, SAMRecordWritable]]
       .mapPartitionsWithInputSplit((inputSplit, iterator) => {
         val file = inputSplit.asInstanceOf[FileVirtualSplit]
@@ -176,16 +178,13 @@ trait BAMBDGFileReader [T]{
 
 }
 
-class BAMRelation[T] (path:String)(@transient val sqlContext: SQLContext)
+class BAMRelation[T <:BDGAlignInputFormat] (path:String)(@transient val sqlContext: SQLContext)(implicit c: ClassTag[T])
   extends BaseRelation with PrunedFilteredScan with Serializable with BAMBDGFileReader[T] {
 
 
   val spark = sqlContext
     .sparkSession
   setLocalConf(sqlContext)
-
-
-
 
   spark
     .sparkContext
