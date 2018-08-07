@@ -15,8 +15,11 @@ class CoverageTestSuite extends FunSuite with DataFrameSuiteBase with BeforeAndA
     val adamPath = getClass.getResource("/NA12878.slice.adam").getPath
     val metricsListener = new MetricsListener(new RecordedMetrics())
     val writer = new PrintWriter(new OutputStreamWriter(System.out))
+    val cramPath = getClass.getResource("/test.cram").getPath
+    val refPath = getClass.getResource("/phix-illumina.fa").getPath
     val tableNameBAM = "reads"
     val tableNameADAM = "readsADAM"
+    val tableNameCRAM = "readsCRAM"
     before{
 
       Metrics.initialize(sc)
@@ -28,6 +31,15 @@ class CoverageTestSuite extends FunSuite with DataFrameSuiteBase with BeforeAndA
            |CREATE TABLE ${tableNameBAM}
            |USING org.biodatageeks.datasources.BAM.BAMDataSource
            |OPTIONS(path "${bamPath}")
+           |
+      """.stripMargin)
+
+      spark.sql(s"DROP TABLE IF EXISTS ${tableNameCRAM}")
+      spark.sql(
+        s"""
+           |CREATE TABLE ${tableNameCRAM}
+           |USING org.biodatageeks.datasources.BAM.CRAMDataSource
+           |OPTIONS(path "${cramPath}", refPath "${refPath}")
            |
       """.stripMargin)
 
@@ -65,6 +77,13 @@ class CoverageTestSuite extends FunSuite with DataFrameSuiteBase with BeforeAndA
     session.experimental.extraStrategies = new CoverageStrategy(session) :: Nil
     session.sql(s"SELECT * FROM bdg_coverage('${tableNameBAM}','NA12878','bdg')").show(5)
 
+  }
+
+  test("CRAM - bdg_coverage - show"){
+    val session: SparkSession = SequilaSession(spark)
+    SequilaRegister.register(session)
+    session.experimental.extraStrategies = new CoverageStrategy(session) :: Nil
+    session.sql(s"SELECT * FROM bdg_coverage('${tableNameCRAM}','test','bdg')").show(5)
 
   }
 

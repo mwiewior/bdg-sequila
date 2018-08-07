@@ -72,7 +72,7 @@ class BAMADAMDataSourceTestSuite extends FunSuite with DataFrameSuiteBase with B
   test("CRAM - select limit" ){
 
     spark
-      .sql(s"SELECT contigName,start,end FROM ${tableNameCRAM} limit 1").show()
+      .sql(s"SELECT contigName,start,end,cigar FROM ${tableNameCRAM}").show(10)
   }
 
   test("CRAM - select count" ){

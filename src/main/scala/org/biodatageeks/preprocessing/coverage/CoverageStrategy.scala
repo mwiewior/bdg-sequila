@@ -126,10 +126,18 @@ case class BDGCoveragePlan [T<:BDGAlignInputFormat](plan: LogicalPlan, spark: Sp
         .foreach(_._2.unpersist()) //FIXME: add filtering not all RDDs
     val schema = plan.schema
     val sampleTable = BDGTableFuncs.getTableMetadata(spark,table)
+    val fileExtension = sampleTable.provider match{
+      case Some(f) => {
+        if (f == "org.biodatageeks.datasources.BAM.BAMDataSource") "bam"
+        else if (f == "org.biodatageeks.datasources.BAM.CRAMDataSource") "cram"
+        else throw new Exception("Only BAM and CRAM file formats are supported in bdg_coverage.")
+      }
+      case None => throw new Exception("Wrong file extenstion - only BAM and CRAM file formats are supported in bdg_coverage.")
+    }
     val samplePath = (sampleTable
       .location.toString
       .split('/')
-      .dropRight(1) ++ Array(s"${sampleId}*.bam"))
+      .dropRight(1) ++ Array(s"${sampleId}*.${fileExtension}"))
       .mkString("/")
 
     setLocalConf(spark.sqlContext)
