@@ -132,7 +132,7 @@ case class BDGCoveragePlan [T<:BDGAlignInputFormat](plan: LogicalPlan, spark: Sp
         else if (f == "org.biodatageeks.datasources.BAM.CRAMDataSource") "cram"
         else throw new Exception("Only BAM and CRAM file formats are supported in bdg_coverage.")
       }
-      case None => throw new Exception("Wrong file extenstion - only BAM and CRAM file formats are supported in bdg_coverage.")
+      case None => throw new Exception("Wrong file extension - only BAM and CRAM file formats are supported in bdg_coverage.")
     }
     val samplePath = (sampleTable
       .location.toString
