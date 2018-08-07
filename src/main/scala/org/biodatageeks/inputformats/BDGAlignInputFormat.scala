@@ -8,6 +8,4 @@ import org.seqdoop.hadoop_bam.{BAMBDGRecordReader, SAMRecordWritable}
 
 abstract class BDGAlignInputFormat extends FileInputFormat[LongWritable, SAMRecordWritable] {
 
-
-
 }

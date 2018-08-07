@@ -5,6 +5,7 @@ import java.net.URI
 import htsjdk.samtools.{SAMRecord, ValidationStringency}
 import org.apache.hadoop.fs.FileSystem
 import org.apache.hadoop.io.LongWritable
+import org.apache.hadoop.mapreduce.lib.input.FileSplit
 import org.apache.log4j.Logger
 import org.apache.spark.rdd.{NewHadoopRDD, RDD}
 import org.apache.spark.sql.{Row, SQLContext}
@@ -12,7 +13,7 @@ import org.apache.spark.sql.sources._
 import org.apache.spark.sql.types.{IntegerType, StringType, StructField, StructType}
 import org.biodatageeks.inputformats.BDGAlignInputFormat
 import org.seqdoop.hadoop_bam.util.SAMHeaderReader
-import org.seqdoop.hadoop_bam.{BAMBDGInputFormat, BAMInputFormat, FileVirtualSplit, SAMRecordWritable}
+import org.seqdoop.hadoop_bam._
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
@@ -141,10 +142,15 @@ trait BDGAlignFileReader [T <: BDGAlignInputFormat]{
       .newAPIHadoopFile[LongWritable, SAMRecordWritable, T](path)
     lazy val alignmentsWithFileName = alignments.asInstanceOf[NewHadoopRDD[LongWritable, SAMRecordWritable]]
       .mapPartitionsWithInputSplit((inputSplit, iterator) => {
-        val file = inputSplit.asInstanceOf[FileVirtualSplit]
-        iterator.map(tup => (file.getPath.getName.split('.')(0), tup._2))
-      }
-      )
+        if (inputSplit.isInstanceOf[FileVirtualSplit]) {
+          val file =inputSplit.asInstanceOf[FileVirtualSplit]
+          iterator.map(tup => (file.getPath.getName.split('.')(0), tup._2))
+        }
+        else{
+          val file = inputSplit.asInstanceOf[FileSplit]
+          iterator.map(tup => (file.getPath.getName.split('.')(0), tup._2))
+        }
+      })
     lazy val sampleAlignments = alignmentsWithFileName
       .map(r => (r._1, r._2.get()))
       .map { case (sampleId, r) =>
@@ -178,7 +184,7 @@ trait BDGAlignFileReader [T <: BDGAlignInputFormat]{
 
 }
 
-class BAMRelation[T <:BDGAlignInputFormat] (path:String)(@transient val sqlContext: SQLContext)(implicit c: ClassTag[T])
+class BDGAlignmentRelation[T <:BDGAlignInputFormat](path:String, refPath:Option[String] = None)(@transient val sqlContext: SQLContext)(implicit c: ClassTag[T])
   extends BaseRelation with PrunedFilteredScan with Serializable with BDGAlignFileReader[T] {
 
 
@@ -190,6 +196,17 @@ class BAMRelation[T <:BDGAlignInputFormat] (path:String)(@transient val sqlConte
     .sparkContext
     .hadoopConfiguration
     .set(SAMHeaderReader.VALIDATION_STRINGENCY_PROPERTY, ValidationStringency.SILENT.toString)
+
+  //CRAM reference file
+  refPath match {
+    case Some(p) => {
+      sqlContext
+        .sparkContext
+        .hadoopConfiguration
+        .set(CRAMInputFormat.REFERENCE_SOURCE_PATH_PROPERTY,p)
+    }
+    case _ => None
+  }
 
   override def schema: org.apache.spark.sql.types.StructType = {
     StructType(
