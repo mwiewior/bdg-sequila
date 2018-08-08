@@ -14,7 +14,7 @@ SeQuiLa is an ANSI-SQL compliant solution for efficient genomic intervals queryi
 
    - genome-wide analyses in several minutes
    - 22x+ speedup over Spark default join operation
-   - 100x+ speedup for interval queries for BAM datasource using BAI indexes (>= 0.4.1)
+   - up to 100x+ speedup for interval queries for BAM datasource using indexes (>= 0.4.1)
    - 100% accuracy in functional tests against GRanges
 
 * SeQuiLa is elastic:

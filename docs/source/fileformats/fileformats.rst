@@ -233,7 +233,7 @@ ADAM data source can be defined in the analogues way (just requires using org.bi
 
 .. code-block:: scala
 
-    val tableNameADAM = "reads_cram"
+    val tableNameADAM = "reads_adam"
     ss.sql("CREATE DATABASE BDGEEK")
     ss.sql("USE BDGEEK")
     ss.sql(
@@ -243,4 +243,4 @@ ADAM data source can be defined in the analogues way (just requires using org.bi
          |OPTIONS(path "/data/input/multisample/*.adam")
          |
       """.stripMargin)
-    ss.sql("SELECT sampleId,contigName,start,end,cigar FROM reads_cram").show(5)
+    ss.sql("SELECT sampleId,contigName,start,end,cigar FROM reads_adam").show(5)
