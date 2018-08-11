@@ -19,6 +19,8 @@ class SeQuiLaAnalyzer(catalog: SessionCatalog, conf: SQLConf) extends Analyzer(c
   //      ResolveHints.RemoveAllHints))
 
 
+  var sequilaOptmazationRules: Seq[Rule[LogicalPlan]] = Nil
+
   override lazy val batches: Seq[Batch] = Seq(
     Batch("Hints", fixedPoint,
       new ResolveHints.ResolveBroadcastHints(conf),
@@ -59,6 +61,7 @@ class SeQuiLaAnalyzer(catalog: SessionCatalog, conf: SQLConf) extends Analyzer(c
         ResolveInlineTables(conf),
         ResolveTimeZone(conf),
         TypeCoercion.typeCoercionRules(1)),
+    Batch("SeQuiLa", Once,sequilaOptmazationRules: _*),
     Batch("Post-Hoc Resolution", Once, postHocResolutionRules: _*),
     Batch("View", Once,
       AliasViewChild(conf)),

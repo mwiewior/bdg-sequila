@@ -3,6 +3,8 @@ package org.biodatageeks.utils
 object BDGInternalParams {
 
   /*A source directory of a table involded in BAM CTAS operation*/
-  final val BAMCTASDir = "spark.biodatageeks.bam.bam_ctas_dir"
+  //final val BAMCTASDir = "spark.biodatageeks.bam.bam_ctas_dir"
+  final val BAMCTASHeaderPath =  "spark.biodatageeks.bam.bam_header_path"
+  final val BAMCTASOutputPath ="spark.biodatageeks.bam.output_path"
 
 }

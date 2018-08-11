@@ -17,7 +17,7 @@ import org.biodatageeks.datasources.BAM.{BDGAlignFileReader, BDGSAMRecord}
 import org.biodatageeks.datasources.BDGInputDataType
 import org.biodatageeks.inputformats.BDGAlignInputFormat
 import org.biodatageeks.preprocessing.coverage.CoverageReadFunctions._
-import org.biodatageeks.utils.BDGTableFuncs
+import org.biodatageeks.utils.{BDGInternalParams, BDGTableFuncs}
 import org.seqdoop.hadoop_bam.{BAMBDGInputFormat, BAMInputFormat, CRAMBDGInputFormat, SAMRecordWritable}
 
 import scala.collection.mutable
@@ -39,9 +39,9 @@ class CoverageStrategy(spark: SparkSession) extends Strategy with Serializable  
         .provider
       inputFormat match {
         case Some(f) => {
-          if (f == "org.biodatageeks.datasources.BAM.BAMDataSource")
+          if (f == BDGInputDataType.BAMInputDataType)
             BDGCoveragePlan[BAMBDGInputFormat](plan, spark, tableName, sampleId, method, output) :: Nil
-          else if (f == "org.biodatageeks.datasources.BAM.CRAMDataSource")
+          else if (f == BDGInputDataType.CRAMInputDataType)
             BDGCoveragePlan[CRAMBDGInputFormat](plan, spark, tableName, sampleId, method, output) :: Nil
           else Nil
         }

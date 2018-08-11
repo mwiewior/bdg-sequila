@@ -34,10 +34,20 @@ class BAMCTASTestSuite  extends FunSuite with DataFrameSuiteBase with BeforeAndA
         s"""
           |CREATE TABLE bam_ctas USING org.biodatageeks.datasources.BAM.BAMDataSource
           |OPTIONS(path "${bamCTAS}/*.bam")
-          |AS SELECT * FROM ${tableNameBAM}
+          |AS SELECT * FROM ${tableNameBAM} WHERE sampleId='NA12878' LIMIT 10
         """.stripMargin)
-            .show()
-          //.explain(false)
+           .show()
+          //.explain(true)
+
+//    ss
+//    .sql(s"DESC FORMATTED  bam_ctas")
+//    .show(1000,false)
+
+
+
+  }
+
+  after{
 
   }
 }

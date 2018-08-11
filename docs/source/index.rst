@@ -89,7 +89,8 @@ Example.scala
  - a new highly-optimized  `mosdepth <https://github.com/brentp/mosdepth>`_ distributed implementation for depth of coverage calculations
  - BAI indexes support for BAM data source
  - CRAM file format support
- - `Intel Genomics Kernel Library (GKL) <https://github.com/Intel-HLS/GKL>`_ support
+ - `Intel Genomics Kernel Library (GKL) <https://github.com/Intel-HLS/GKL>`_ support for BAM files reading
+ - CTAS (Create Table As Select) and IAS (Insert As Select) for BAM Files
  - experimental `spark-bam <https://github.com/hammerlab/spark-bam>`_ support
 
 0.4
