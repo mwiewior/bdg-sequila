@@ -8,6 +8,7 @@ import org.apache.hadoop.io.LongWritable
 import org.apache.hadoop.mapreduce.lib.input.FileSplit
 import org.apache.log4j.Logger
 import org.apache.spark.rdd.{NewHadoopRDD, RDD}
+import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression}
 import org.apache.spark.sql.{Row, SQLContext}
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.types.{IntegerType, StringType, StructField, StructType}
@@ -185,7 +186,11 @@ trait BDGAlignFileReader [T <: BDGAlignInputFormat]{
 }
 
 class BDGAlignmentRelation[T <:BDGAlignInputFormat](path:String, refPath:Option[String] = None)(@transient val sqlContext: SQLContext)(implicit c: ClassTag[T])
-  extends BaseRelation with PrunedFilteredScan with Serializable with BDGAlignFileReader[T] {
+  extends BaseRelation
+    with PrunedFilteredScan
+    //with CatalystScan
+    with Serializable
+    with BDGAlignFileReader[T] {
 
 
   val spark = sqlContext
@@ -347,5 +352,11 @@ class BDGAlignmentRelation[T <:BDGAlignInputFormat](path:String, refPath:Option[
 
   //}
 
+  //placeholder for distinct sampleId
+//  override def  buildScan(requiredColumns: Seq[Attribute], filters: Seq[Expression]): RDD[Row] ={
+//    spark
+//      .sparkContext
+//      .emptyRDD[Row]
+//  }
 
 }
