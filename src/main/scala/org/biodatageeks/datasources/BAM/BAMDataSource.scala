@@ -2,6 +2,7 @@ package org.biodatageeks.datasources.BAM
 
 import org.apache.spark.sql.{DataFrame, SQLContext, SaveMode}
 import org.apache.spark.sql.sources._
+import org.biodatageeks.utils.BDGInternalParams
 import org.seqdoop.hadoop_bam.BAMBDGInputFormat
 
 
@@ -22,6 +23,7 @@ class BAMDataSource extends DataSourceRegister
                               parameters: Map[String, String], data: DataFrame): BaseRelation = {
 
 
+    println(sqlContext.getConf(BDGInternalParams.BAMCTASDir))
     createRelation(sqlContext, parameters)
   }
 

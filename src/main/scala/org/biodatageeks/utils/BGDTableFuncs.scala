@@ -9,4 +9,13 @@ object BDGTableFuncs{
     val tId = spark.sessionState.sqlParser.parseTableIdentifier(tableName)
     catalog.getTableMetadata(tId)
   }
+
+  def getTableDirectory(spark: SparkSession, tableName:String) ={
+    getTableMetadata(spark,tableName)
+      .location
+      .toString
+      .split('/')
+      .dropRight(1)
+      .mkString("/")
+  }
 }

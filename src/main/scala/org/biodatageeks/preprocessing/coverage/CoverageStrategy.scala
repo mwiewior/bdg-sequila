@@ -120,7 +120,8 @@ case class BDGCoveragePlan [T<:BDGAlignInputFormat](plan: LogicalPlan, spark: Sp
       .getPersistentRDDs
         .foreach(_._2.unpersist()) //FIXME: add filtering not all RDDs
     val schema = plan.schema
-    val sampleTable = BDGTableFuncs.getTableMetadata(spark,table)
+    val sampleTable = BDGTableFuncs
+      .getTableMetadata(spark,table)
     val fileExtension = sampleTable.provider match{
       case Some(f) => {
         if (f == BDGInputDataType.BAMInputDataType) "bam"

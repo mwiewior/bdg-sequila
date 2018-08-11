@@ -36,7 +36,8 @@ class BAMCTASTestSuite  extends FunSuite with DataFrameSuiteBase with BeforeAndA
           |OPTIONS(path "${bamCTAS}/*.bam")
           |AS SELECT * FROM ${tableNameBAM}
         """.stripMargin)
-          .explain(false)
+            .show()
+          //.explain(false)
 
   }
 }
