@@ -44,6 +44,7 @@ class BAMDataSource extends DataSourceRegister
     println("BAMDataSource writer")
     val spark = sqlContext.sparkSession
     //saveAsBAMFile(spark, parameters, mode, data)
+    println(parameters.mkString("|"))
     createRelation(sqlContext, parameters)
   }
 

@@ -8,10 +8,10 @@ import org.apache.spark.sql.catalyst.catalog.SessionCatalog
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.execution.QueryExecution
+import org.apache.spark.sql.execution.command.BAMCTASOptimizationRule
 import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.{SparkSession, SparkSessionExtensions}
 import org.apache.spark.sql.internal.{SQLConf, SessionState}
-import org.biodatageeks.io.BAM.BAMCTASOptimizationRule
 import org.biodatageeks.preprocessing.coverage.CoverageStrategy
 
 import scala.util.Random
