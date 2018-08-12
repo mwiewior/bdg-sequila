@@ -1,5 +1,6 @@
 package org.biodatageeks.utils
 
+import org.apache.hadoop.fs.FileSystem
 import org.apache.spark.sql.SparkSession
 
 object BDGTableFuncs{
@@ -17,5 +18,11 @@ object BDGTableFuncs{
       .split('/')
       .dropRight(1)
       .mkString("/")
+  }
+
+  def getExactSamplePath(spark: SparkSession, path:String) = {
+    val fs = FileSystem.get(spark.sparkContext.hadoopConfiguration)
+    val statuses = fs.globStatus(new org.apache.hadoop.fs.Path(path))
+    statuses.head.getPath.toString
   }
 }

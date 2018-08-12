@@ -2,14 +2,15 @@ package org.biodatageeks.datasources.BAM
 
 import org.apache.spark.sql.{DataFrame, SQLContext, SaveMode, SparkSession}
 import org.apache.spark.sql.sources._
-import org.biodatageeks.utils.BDGInternalParams
+import org.biodatageeks.utils.{BDGInternalParams, BDGTableFuncs}
 import org.seqdoop.hadoop_bam.BAMBDGInputFormat
 
 
 class BAMDataSource extends DataSourceRegister
   with RelationProvider
   with CreatableRelationProvider
-  with InsertableRelation{
+  with InsertableRelation
+  with BDGAlignFileReaderWriter[BAMBDGInputFormat] {
   override def shortName(): String = "BAM"
 
   override def createRelation(sqlContext: SQLContext,
@@ -19,18 +20,21 @@ class BAMDataSource extends DataSourceRegister
   }
 
 
-  def saveAsBAMFile(spark: SparkSession, parameters: Map[String, String], mode: SaveMode,data: DataFrame) = {
+  def save(spark: SparkSession, parameters: Map[String, String], mode: SaveMode) = {
 
+    println(parameters.mkString("|"))
     val outPath = parameters("path")
-    import spark.implicits._
+    val sampleName = "NA12878"
+    val samplePath = s"${parameters(BDGInternalParams.BAMCTASDir)}/${sampleName}*.bam"
+    val srcBAMRDD = readBAMFile(spark.sqlContext,samplePath)
+    println(s"${parameters("path").split('/').dropRight(1).mkString("/")}/${sampleName}.bam")
+    val headerPath = BDGTableFuncs.getExactSamplePath(spark,samplePath)
+    saveAsBAMFile(spark.sqlContext,srcBAMRDD,s"${parameters("path").split('/').dropRight(1).mkString("/")}/${sampleName}.bam",headerPath)
+    println(srcBAMRDD.count())
 
-    val schema  = data.schema
-    val ds = data
-        .as[BDGSAMRecord]
 
 
-    println(ds.count())
-    println(schema.treeString)
+
 
 
   }
@@ -40,11 +44,9 @@ class BAMDataSource extends DataSourceRegister
                               parameters: Map[String, String], data: DataFrame): BaseRelation = {
 
 
-    //println(sqlContext.getConf(BDGInternalParams.BAMCTASDir))
-    println("BAMDataSource writer")
     val spark = sqlContext.sparkSession
-    //saveAsBAMFile(spark, parameters, mode, data)
-    println(parameters.mkString("|"))
+    save(spark, parameters, mode)
+
     createRelation(sqlContext, parameters)
   }
 

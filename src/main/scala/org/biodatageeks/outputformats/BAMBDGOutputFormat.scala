@@ -4,12 +4,17 @@ import org.apache.hadoop.mapreduce.{RecordWriter, TaskAttemptContext}
 import org.seqdoop.hadoop_bam.{KeyIgnoringBAMOutputFormat, KeyIgnoringBAMRecordWriter, SAMRecordWritable}
 import org.apache.hadoop.fs.Path
 import org.apache.hadoop.io.NullWritable
-import org.biodatageeks.utils.BDGInternalParams
+import org.biodatageeks.utils.{BDGInternalParams}
+import org.apache.hadoop.conf.Configuration
+import org.apache.hadoop.fs.FileSystem
+import org.apache.hadoop.fs.Path
+import org.apache.hadoop.fs.FSDataOutputStream
 
-class BAMBDGOutputFormat extends KeyIgnoringBAMOutputFormat[NullWritable] with Serializable {
+
+class BAMBDGOutputFormat[K] extends KeyIgnoringBAMOutputFormat[K] with Serializable {
   setWriteHeader(true)
 
-  override def getRecordWriter(context: TaskAttemptContext): RecordWriter[NullWritable, SAMRecordWritable] = {
+  override def getRecordWriter(context: TaskAttemptContext): RecordWriter[K, SAMRecordWritable] = {
     val conf = context.getConfiguration()
 
     // source BAM file to get the header from and the output BAM for writing
@@ -18,8 +23,21 @@ class BAMBDGOutputFormat extends KeyIgnoringBAMOutputFormat[NullWritable] with S
 
     readSAMHeaderFrom(inPath, conf)
 
+    val hdfs = FileSystem.get(conf)
+    var fos:FSDataOutputStream  = null
+    if (hdfs.exists(outPath)) {
+      fos = hdfs.append(outPath)
+      fos.writeBytes("")
+    }
+    else { // Otherwise, we create an empty file:
+      fos = hdfs.create(outPath)
+    }
+    fos.close()
+
+
+
     // now that we have the header set, we need to make a record reader
-   new KeyIgnoringBAMRecordWriter[NullWritable](outPath,header, true, context)
+   new KeyIgnoringBAMRecordWriter[K](outPath,header, true, context)
 
   }
 }

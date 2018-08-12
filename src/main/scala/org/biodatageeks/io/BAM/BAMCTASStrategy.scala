@@ -6,7 +6,7 @@ import org.apache.spark.sql.catalyst.plans.logical.{Filter, LogicalPlan, Subquer
 import org.apache.spark.sql.execution.SparkPlan
 import org.apache.spark.sql.execution.command.{CreateDataSourceTableAsSelectCommand, CreateDataSourceTableCommand, RunnableCommand}
 import org.apache.spark.sql.catalyst.expressions.Attribute
-import org.biodatageeks.datasources.BAM.{BAMDataSource, BDGAlignFileReader}
+import org.biodatageeks.datasources.BAM.{BAMDataSource, BDGAlignFileReaderWriter}
 import org.biodatageeks.datasources.BDGInputDataType
 import org.biodatageeks.inputformats.BDGAlignInputFormat
 import org.biodatageeks.utils.{BDGInternalParams, BDGTableFuncs}

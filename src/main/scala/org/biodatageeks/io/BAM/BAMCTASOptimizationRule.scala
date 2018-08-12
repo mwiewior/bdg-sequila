@@ -11,7 +11,7 @@ import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.execution.datasources.{CreateTable, DataSource, HadoopFsRelation, LogicalRelation}
 import org.apache.spark.sql.sources.BaseRelation
 import org.biodatageeks.datasources.BDGInputDataType
-import org.biodatageeks.utils.BDGTableFuncs
+import org.biodatageeks.utils.{BDGInternalParams, BDGTableFuncs}
 
 case class CreateBAMDataSourceTableAsSelectCommand(
                                                  table: CatalogTable,
@@ -81,8 +81,8 @@ case class CreateBAMDataSourceTableAsSelectCommand(
                          tableExists: Boolean): BaseRelation = {
     // Create the relation based on the input logical plan: `data`.
     val pathOption = tableLocation.map("path" -> CatalogUtils.URIToString(_))
-    val filters = query.collect { case f: Filter => f.condition.toString().replace("'","") }.head
-    val limit = query.collect { case f:GlobalLimit => f.children(0).toString().split('\n')(0).stripPrefix("'").replace("LocalLimit","").trim}.head
+    val filters = query.collect { case f: Filter => f.condition.toString().replace("'","") }.headOption
+    val limit = query.collect { case f:GlobalLimit => f.children(0).toString().split('\n')(0).stripPrefix("'").replace("LocalLimit","").trim}.headOption
     val srcTable = query.collect { case f:SubqueryAlias => f.alias }.head
 
     val dataSource = DataSource(
@@ -90,7 +90,9 @@ case class CreateBAMDataSourceTableAsSelectCommand(
       className = table.provider.get,
       partitionColumns = table.partitionColumnNames,
       bucketSpec = table.bucketSpec,
-      options = table.storage.properties ++ pathOption ++ Map("srcTableDir"->BDGTableFuncs.getTableDirectory(session,srcTable),"filter" -> filters, "limit" -> limit) ,
+      options = table.storage.properties ++ pathOption
+        ++ Map(BDGInternalParams.BAMCTASDir->BDGTableFuncs.getTableDirectory(session,srcTable),
+        BDGInternalParams.BAMCTASFilter -> filters.getOrElse(""), BDGInternalParams.BAMCTASLimit -> limit.getOrElse("")) ,
       catalogTable = if (tableExists) Some(table) else None)
 
     //filters.foreach(println(_))

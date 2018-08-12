@@ -3,13 +3,14 @@ package org.biodatageeks.datasources.BAM
 import java.net.URI
 
 import htsjdk.samtools.{SAMRecord, ValidationStringency}
-import org.apache.hadoop.fs.FileSystem
-import org.apache.hadoop.io.LongWritable
+import org.apache.hadoop.fs.{FileSystem}
+import org.apache.hadoop.io.{LongWritable, NullWritable}
 import org.apache.hadoop.mapreduce.lib.input.FileSplit
 import org.apache.log4j.Logger
+import org.apache.spark.SparkContext
 import org.apache.spark.rdd.{NewHadoopRDD, RDD}
 import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression}
-import org.apache.spark.sql.{Row, SQLContext}
+import org.apache.spark.sql.{Row, SQLContext, SparkSession}
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.types.{IntegerType, StringType, StructField, StructType}
 import org.biodatageeks.inputformats.BDGAlignInputFormat
@@ -19,6 +20,9 @@ import org.seqdoop.hadoop_bam._
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 import scala.reflect.ClassTag
+import org.apache.spark.rdd.PairRDDFunctions
+import org.biodatageeks.outputformats.BAMBDGOutputFormat
+import org.biodatageeks.utils.{BDGInternalParams, BDGTableFuncs}
 
 
 case class BDGSAMRecord(sampleId: String,
@@ -33,7 +37,7 @@ case class BDGSAMRecord(sampleId: String,
                      materefind:Int)
 
 
-trait BDGAlignFileReader [T <: BDGAlignInputFormat]{
+trait BDGAlignFileReaderWriter [T <: BDGAlignInputFormat]{
 
 
   val confMap = new mutable.HashMap[String,String]()
@@ -110,10 +114,7 @@ trait BDGAlignFileReader [T <: BDGAlignInputFormat]{
 
     val spark = sqlContext
       .sparkSession
-    val fs = FileSystem.get(spark.sparkContext.hadoopConfiguration)
-    val statuses = fs.globStatus(new org.apache.hadoop.fs.Path(path))
-    val resolvedPath = statuses.head.getPath.toString
-    println(resolvedPath)
+    val resolvedPath = BDGTableFuncs.getExactSamplePath(spark,path)
     if(!spark.sqlContext.getConf("spark.biodatageeks.bam.useSparkBAM","false").toBoolean)
       spark.sparkContext
         .newAPIHadoopFile[LongWritable, SAMRecordWritable, T](path)
@@ -166,6 +167,43 @@ trait BDGAlignFileReader [T <: BDGAlignInputFormat]{
 
   }
 
+  def saveAsBAMFile(sqlContext: SQLContext, rdd:RDD[SAMRecord], path:String, headerPath:String) = {
+
+
+    val nullPathString = "/tmp/null"
+    sqlContext
+      .sparkContext
+      .hadoopConfiguration
+      .set(BDGInternalParams.BAMCTASHeaderPath,headerPath)
+
+    sqlContext
+      .sparkContext
+      .hadoopConfiguration
+      .set(BDGInternalParams.BAMCTASOutputPath,path)
+
+    try {
+      rdd
+        .map(r => (NullWritable.get(),  {val record = new SAMRecordWritable();record.set(r);record}) )
+        .saveAsNewAPIHadoopFile[BAMBDGOutputFormat[NullWritable]](nullPathString)
+    }
+    finally {
+      sqlContext
+        .sparkContext
+        .hadoopConfiguration
+        .unset(BDGInternalParams.BAMCTASHeaderPath)
+      sqlContext
+        .sparkContext
+        .hadoopConfiguration
+        .unset(BDGInternalParams.BAMCTASOutputPath)
+    }
+    val hdfs = FileSystem.get(sqlContext.sparkContext.hadoopConfiguration)
+
+    //Fix for Spark saveAsNewHadoopfile
+    val nullPath = new org.apache.hadoop.fs.Path(nullPathString)
+    if(hdfs.exists(nullPath)) hdfs.delete(nullPath,true)
+
+  }
+
   private def getValueFromColumn(colName:String,r:SAMRecord, sampleId:String): Any = {
 
     if(colName == columnNames(0)) sampleId
@@ -190,7 +228,7 @@ class BDGAlignmentRelation[T <:BDGAlignInputFormat](path:String, refPath:Option[
     with PrunedFilteredScan
     //with CatalystScan
     with Serializable
-    with BDGAlignFileReader[T] {
+    with BDGAlignFileReaderWriter[T] {
 
 
   val spark = sqlContext

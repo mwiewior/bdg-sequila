@@ -13,7 +13,7 @@ import org.apache.spark.sql.catalyst.encoders.ExpressionEncoder
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.unsafe.types.UTF8String
 import org.apache.spark.util.AccumulatorV2
-import org.biodatageeks.datasources.BAM.{BDGAlignFileReader, BDGSAMRecord}
+import org.biodatageeks.datasources.BAM.{BDGAlignFileReaderWriter, BDGSAMRecord}
 import org.biodatageeks.datasources.BDGInputDataType
 import org.biodatageeks.inputformats.BDGAlignInputFormat
 import org.biodatageeks.preprocessing.coverage.CoverageReadFunctions._
@@ -112,7 +112,7 @@ case class UpdateStruct(upd:mutable.HashMap[(String,Int),(Option[Array[Short]],S
 
 case class BDGCoveragePlan [T<:BDGAlignInputFormat](plan: LogicalPlan, spark: SparkSession,
                                                     table:String, sampleId:String, method: String, output: Seq[Attribute])(implicit c: ClassTag[T])
-  extends SparkPlan with Serializable  with BDGAlignFileReader [T]{
+  extends SparkPlan with Serializable  with BDGAlignFileReaderWriter [T]{
   def doExecute(): org.apache.spark.rdd.RDD[InternalRow] = {
 
     spark

@@ -34,7 +34,7 @@ class BAMCTASTestSuite  extends FunSuite with DataFrameSuiteBase with BeforeAndA
         s"""
           |CREATE TABLE bam_ctas USING org.biodatageeks.datasources.BAM.BAMDataSource
           |OPTIONS(path "${bamCTAS}/*.bam")
-          |AS SELECT * FROM ${tableNameBAM} WHERE sampleId='NA12878' and contigName='20' AND start >1000 LIMIT 10
+          |AS SELECT * FROM ${tableNameBAM} WHERE sampleId='NA12878'
         """.stripMargin)
            .show()
           //.explain(true)
@@ -42,6 +42,10 @@ class BAMCTASTestSuite  extends FunSuite with DataFrameSuiteBase with BeforeAndA
     ss
     .sql(s"DESC FORMATTED  bam_ctas")
     .show(1000,false)
+
+    val dfSrc = ss.sql(s"SELECT * FROM ${tableNameBAM} ORDER BY contigName, start")
+    val dfDst = ss.sql(s"SELECT * FROM bam_ctas ORDER BY contigName, start")
+    assertDataFrameEquals(dfSrc,dfDst)
 
 
 
