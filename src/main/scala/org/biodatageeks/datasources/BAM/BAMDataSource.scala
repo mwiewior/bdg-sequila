@@ -1,8 +1,9 @@
 package org.biodatageeks.datasources.BAM
 
+import htsjdk.samtools.SAMRecord
 import org.apache.spark.sql.{DataFrame, SQLContext, SaveMode, SparkSession}
 import org.apache.spark.sql.sources._
-import org.biodatageeks.utils.{BDGInternalParams, BDGTableFuncs}
+import org.biodatageeks.utils.{BDGInternalParams, BDGSerializer, BDGTableFuncs}
 import org.seqdoop.hadoop_bam.BAMBDGInputFormat
 
 
@@ -20,23 +21,19 @@ class BAMDataSource extends DataSourceRegister
   }
 
 
-  def save(spark: SparkSession, parameters: Map[String, String], mode: SaveMode) = {
+  def save(spark: SparkSession, parameters: Map[String, String], mode: SaveMode, data: DataFrame) = {
 
-    println(parameters.mkString("|"))
-    val outPath = parameters("path")
-    val sampleName = "NA12878"
+    import spark.implicits._
+    val ds = data
+      .as[BDGSAMRecord]
+    val sampleName = ds.first().sampleId
     val samplePath = s"${parameters(BDGInternalParams.BAMCTASDir)}/${sampleName}*.bam"
-    val srcBAMRDD = readBAMFile(spark.sqlContext,samplePath)
-    println(s"${parameters("path").split('/').dropRight(1).mkString("/")}/${sampleName}.bam")
+    val srcBAMRDD =
+      ds
+        .rdd
+        .map( r => BDGSerializer.deserialise(r.SAMRecord.get).asInstanceOf[SAMRecord] )
     val headerPath = BDGTableFuncs.getExactSamplePath(spark,samplePath)
     saveAsBAMFile(spark.sqlContext,srcBAMRDD,s"${parameters("path").split('/').dropRight(1).mkString("/")}/${sampleName}.bam",headerPath)
-    println(srcBAMRDD.count())
-
-
-
-
-
-
   }
 
   //CTAS
@@ -45,8 +42,7 @@ class BAMDataSource extends DataSourceRegister
 
 
     val spark = sqlContext.sparkSession
-    save(spark, parameters, mode)
-
+    save(spark, parameters, mode ,data)
     createRelation(sqlContext, parameters)
   }
 

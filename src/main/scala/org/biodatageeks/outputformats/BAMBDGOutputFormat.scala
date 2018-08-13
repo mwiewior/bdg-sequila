@@ -26,14 +26,13 @@ class BAMBDGOutputFormat[K] extends KeyIgnoringBAMOutputFormat[K] with Serializa
     val hdfs = FileSystem.get(conf)
     var fos:FSDataOutputStream  = null
     if (hdfs.exists(outPath)) {
-      fos = hdfs.append(outPath)
-      fos.writeBytes("")
+      hdfs.delete(outPath,true)
+      fos = hdfs.create(outPath)
     }
     else { // Otherwise, we create an empty file:
       fos = hdfs.create(outPath)
     }
     fos.close()
-
 
 
     // now that we have the header set, we need to make a record reader

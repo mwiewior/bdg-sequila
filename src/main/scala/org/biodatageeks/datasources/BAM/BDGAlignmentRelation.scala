@@ -3,7 +3,7 @@ package org.biodatageeks.datasources.BAM
 import java.net.URI
 
 import htsjdk.samtools.{SAMRecord, ValidationStringency}
-import org.apache.hadoop.fs.{FileSystem}
+import org.apache.hadoop.fs.FileSystem
 import org.apache.hadoop.io.{LongWritable, NullWritable}
 import org.apache.hadoop.mapreduce.lib.input.FileSplit
 import org.apache.log4j.Logger
@@ -12,7 +12,7 @@ import org.apache.spark.rdd.{NewHadoopRDD, RDD}
 import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression}
 import org.apache.spark.sql.{Row, SQLContext, SparkSession}
 import org.apache.spark.sql.sources._
-import org.apache.spark.sql.types.{IntegerType, StringType, StructField, StructType}
+import org.apache.spark.sql.types._
 import org.biodatageeks.inputformats.BDGAlignInputFormat
 import org.seqdoop.hadoop_bam.util.SAMHeaderReader
 import org.seqdoop.hadoop_bam._
@@ -22,7 +22,7 @@ import scala.collection.mutable.ArrayBuffer
 import scala.reflect.ClassTag
 import org.apache.spark.rdd.PairRDDFunctions
 import org.biodatageeks.outputformats.BAMBDGOutputFormat
-import org.biodatageeks.utils.{BDGInternalParams, BDGTableFuncs}
+import org.biodatageeks.utils.{BDGInternalParams, BDGSerializer, BDGTableFuncs}
 
 
 case class BDGSAMRecord(sampleId: String,
@@ -34,7 +34,8 @@ case class BDGSAMRecord(sampleId: String,
                      baseq: String,
                      reference:String,
                      flags:Int,
-                     materefind:Int)
+                     materefind:Int,
+                     SAMRecord: Option[Array[Byte]])
 
 
 trait BDGAlignFileReaderWriter [T <: BDGAlignInputFormat]{
@@ -51,7 +52,8 @@ trait BDGAlignFileReaderWriter [T <: BDGAlignInputFormat]{
     "baseq",
     "reference",
     "flags",
-    "materefind"
+    "materefind",
+    "SAMRecord"
   )
 
   def setLocalConf(@transient sqlContext: SQLContext) = {
@@ -132,7 +134,9 @@ trait BDGAlignFileReaderWriter [T <: BDGAlignInputFormat]{
 
 
 
-  def readBAMFileToBAMBDGRecord(@transient sqlContext: SQLContext, path: String, requiredColumns:Array[String])(implicit c: ClassTag[T]) = {
+  def readBAMFileToBAMBDGRecord(@transient sqlContext: SQLContext, path: String,
+                                requiredColumns:Array[String])
+                               (implicit c: ClassTag[T]) = {
 
 
     setLocalConf(sqlContext)
@@ -170,7 +174,13 @@ trait BDGAlignFileReaderWriter [T <: BDGAlignInputFormat]{
   def saveAsBAMFile(sqlContext: SQLContext, rdd:RDD[SAMRecord], path:String, headerPath:String) = {
 
 
-    val nullPathString = "/tmp/null"
+    val nullPathString = "/tmp/null.bam"
+    //Fix for Spark saveAsNewHadoopfile
+    val hdfs = FileSystem.get(sqlContext.sparkContext.hadoopConfiguration)
+    val nullPath = new org.apache.hadoop.fs.Path(nullPathString)
+    if(hdfs.exists(nullPath)) hdfs.delete(nullPath,true)
+
+
     sqlContext
       .sparkContext
       .hadoopConfiguration
@@ -196,11 +206,7 @@ trait BDGAlignFileReaderWriter [T <: BDGAlignInputFormat]{
         .hadoopConfiguration
         .unset(BDGInternalParams.BAMCTASOutputPath)
     }
-    val hdfs = FileSystem.get(sqlContext.sparkContext.hadoopConfiguration)
 
-    //Fix for Spark saveAsNewHadoopfile
-    val nullPath = new org.apache.hadoop.fs.Path(nullPathString)
-    if(hdfs.exists(nullPath)) hdfs.delete(nullPath,true)
 
   }
 
@@ -216,6 +222,7 @@ trait BDGAlignFileReaderWriter [T <: BDGAlignInputFormat]{
     else if (colName == columnNames(7)) r.getReferenceName
     else if (colName == columnNames(8)) r.getFlags
     else if (colName == columnNames(9)) r.getMateReferenceIndex
+    else if (colName == columnNames(10)) BDGSerializer.serialise(r)
     else throw new Exception("Unknown column")
 
   }
@@ -263,8 +270,8 @@ class BDGAlignmentRelation[T <:BDGAlignInputFormat](path:String, refPath:Option[
         new StructField(columnNames(6), StringType),
         new StructField(columnNames(7), StringType),
         new StructField(columnNames(8), IntegerType),
-        new StructField(columnNames(9), IntegerType)
-
+        new StructField(columnNames(9), IntegerType),
+        new StructField(columnNames(10), BinaryType)
       )
     )
   }
