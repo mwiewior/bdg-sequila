@@ -52,6 +52,9 @@ libraryDependencies += "com.intel.gkl" % "gkl" % "0.8.5-1-linux-SNAPSHOT"
 
 libraryDependencies += "org.hammerlab.bam" %% "load" % "1.2.0-M1"
 
+libraryDependencies += "de.ruedigermoeller" % "fst" % "2.57"
+libraryDependencies += "org.apache.commons" % "commons-lang3" % "3.7"
+
 
 
 

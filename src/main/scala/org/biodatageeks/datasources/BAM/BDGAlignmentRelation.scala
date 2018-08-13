@@ -22,7 +22,8 @@ import scala.collection.mutable.ArrayBuffer
 import scala.reflect.ClassTag
 import org.apache.spark.rdd.PairRDDFunctions
 import org.biodatageeks.outputformats.BAMBDGOutputFormat
-import org.biodatageeks.utils.{BDGInternalParams, BDGSerializer, BDGTableFuncs}
+import org.biodatageeks.utils.{BDGFastSerializer, BDGInternalParams, BDGTableFuncs}
+import org.nustaq.serialization.FSTConfiguration
 
 
 case class BDGSAMRecord(sampleId: String,
@@ -41,6 +42,8 @@ case class BDGSAMRecord(sampleId: String,
 trait BDGAlignFileReaderWriter [T <: BDGAlignInputFormat]{
 
 
+//  val bdgSerialize = new BDGSerializer()
+  //val serializer = new BDGFastSerializer()
   val confMap = new mutable.HashMap[String,String]()
   val columnNames = Array(
     "sampleId",
@@ -159,14 +162,20 @@ trait BDGAlignFileReaderWriter [T <: BDGAlignInputFormat]{
       })
     lazy val sampleAlignments = alignmentsWithFileName
       .map(r => (r._1, r._2.get()))
-      .map { case (sampleId, r) =>
-        val record = new Array[Any](requiredColumns.length)
-        //requiredColumns.
-        for(i<- 0 to requiredColumns.length-1){
-          record(i) = getValueFromColumn(requiredColumns(i),r,sampleId)
+      .mapPartitions(
+      p=> {
+        val serializer = new BDGFastSerializer
+        p.map {
+          case (sampleId, r) =>
+            val record = new Array[Any](requiredColumns.length)
+            //requiredColumns.
+            for (i <- 0 to requiredColumns.length - 1) {
+              record(i) = getValueFromColumn(requiredColumns(i), r, sampleId,serializer)
+            }
+            Row.fromSeq(record)
         }
-        Row.fromSeq(record)
       }
+    )
     sampleAlignments
 
   }
@@ -174,6 +183,8 @@ trait BDGAlignFileReaderWriter [T <: BDGAlignInputFormat]{
   def saveAsBAMFile(sqlContext: SQLContext, rdd:RDD[SAMRecord], path:String, headerPath:String) = {
 
 
+//    val header = rdd.first().getHeader
+//    val bdgSerializer = new BDGSerializer(header)
     val nullPathString = "/tmp/null.bam"
     //Fix for Spark saveAsNewHadoopfile
     val hdfs = FileSystem.get(sqlContext.sparkContext.hadoopConfiguration)
@@ -210,7 +221,8 @@ trait BDGAlignFileReaderWriter [T <: BDGAlignInputFormat]{
 
   }
 
-  private def getValueFromColumn(colName:String,r:SAMRecord, sampleId:String): Any = {
+  private def getValueFromColumn(colName:String,r:SAMRecord, sampleId:String, serializer: BDGFastSerializer): Any = {
+
 
     if(colName == columnNames(0)) sampleId
     else if (colName == columnNames(1)) r.getContig
@@ -222,7 +234,7 @@ trait BDGAlignFileReaderWriter [T <: BDGAlignInputFormat]{
     else if (colName == columnNames(7)) r.getReferenceName
     else if (colName == columnNames(8)) r.getFlags
     else if (colName == columnNames(9)) r.getMateReferenceIndex
-    else if (colName == columnNames(10)) BDGSerializer.serialise(r)
+    else if (colName == columnNames(10)) serializer.fst.asByteArray(r)
     else throw new Exception("Unknown column")
 
   }
@@ -241,6 +253,8 @@ class BDGAlignmentRelation[T <:BDGAlignInputFormat](path:String, refPath:Option[
   val spark = sqlContext
     .sparkSession
   setLocalConf(sqlContext)
+
+  val tablePath = path
 
   spark
     .sparkContext

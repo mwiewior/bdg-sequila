@@ -3,6 +3,7 @@ package pl.edu.pw.ii.biodatageeks.tests
 import java.io.{OutputStreamWriter, PrintWriter}
 
 import com.holdenkarau.spark.testing.{DataFrameSuiteBase, SharedSparkContext}
+import htsjdk.samtools.SAMRecord
 import org.apache.spark.sql.SequilaSession
 import org.bdgenomics.utils.instrumentation.{Metrics, MetricsListener, RecordedMetrics}
 import org.biodatageeks.utils.SequilaRegister
