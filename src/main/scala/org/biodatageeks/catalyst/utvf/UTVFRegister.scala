@@ -8,7 +8,7 @@ import org.apache.spark.sql.catalyst.catalog.SessionCatalog
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.execution.QueryExecution
-import org.apache.spark.sql.execution.command.BAMCTASOptimizationRule
+import org.apache.spark.sql.execution.command.{BAMCTASOptimizationRule, BAMIASOptimizationRule}
 import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.internal.{SQLConf, SessionState}
 import org.biodatageeks.preprocessing.coverage.CoverageStrategy
@@ -27,7 +27,8 @@ case class SequilaSession(sparkSession: SparkSession) extends SparkSession(spark
 
   //new rules
   sequilaAnalyzer.sequilaOptmazationRules = Seq(
-    new BAMCTASOptimizationRule(sparkSession)
+    new BAMCTASOptimizationRule(sparkSession),
+    new BAMIASOptimizationRule(sparkSession)
   )
 
 

@@ -3,14 +3,14 @@ package org.biodatageeks.datasources.BAM
 import java.net.URI
 
 import htsjdk.samtools.{SAMRecord, ValidationStringency}
-import org.apache.hadoop.fs.FileSystem
+import org.apache.hadoop.fs.{FSDataOutputStream, FileSystem}
 import org.apache.hadoop.io.{LongWritable, NullWritable}
 import org.apache.hadoop.mapreduce.lib.input.FileSplit
 import org.apache.log4j.Logger
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.{NewHadoopRDD, RDD}
 import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression}
-import org.apache.spark.sql.{Row, SQLContext, SparkSession}
+import org.apache.spark.sql._
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.types._
 import org.biodatageeks.inputformats.BDGAlignInputFormat
@@ -244,6 +244,7 @@ trait BDGAlignFileReaderWriter [T <: BDGAlignInputFormat]{
 
 class BDGAlignmentRelation[T <:BDGAlignInputFormat](path:String, refPath:Option[String] = None)(@transient val sqlContext: SQLContext)(implicit c: ClassTag[T])
   extends BaseRelation
+    with InsertableRelation
     with PrunedFilteredScan
     //with CatalystScan
     with Serializable
@@ -408,7 +409,46 @@ class BDGAlignmentRelation[T <:BDGAlignInputFormat](path:String, refPath:Option[
       readBAMFileToBAMBDGRecord(sqlContext, prunedPaths, requiredColumns)
     }
 
+  override  def insert(data: DataFrame,overwrite:Boolean) = {
+ println("Rel")
+  }
 
+  def insertWithHeader(data:DataFrame, overwrite:Boolean, srcTable:String) = {
+
+    import spark.implicits._
+    val ds = data
+      .as[BDGSAMRecord]
+    val sampleName = ds.first().sampleId
+    val outPathString = s"${path.split('/').dropRight(1).mkString("/")}/${sampleName}.bam"
+
+    val outPath = new org.apache.hadoop.fs.Path(outPathString)
+    val hdfs = FileSystem.get(spark.sparkContext.hadoopConfiguration)
+    var fos:FSDataOutputStream  = null
+
+    if (hdfs.exists(outPath) && overwrite) {
+      hdfs.delete(outPath,true)
+      fos = hdfs.create(outPath)
+    }
+    else if(!hdfs.exists(outPath)) { //
+      fos = hdfs.create(outPath)
+    }
+    else
+      throw new Exception(s"Path: ${outPathString} already exits and saveMode is not ${SaveMode.Overwrite}")
+
+    fos.close()
+
+    val srcBAMRDD =
+      ds
+        .rdd
+        .mapPartitions(p =>{
+          val bdgSerializer = new BDGFastSerializer()
+          p.map( r => bdgSerializer.fst.asObject(r.SAMRecord.get).asInstanceOf[SAMRecord] )
+        })
+
+    val samplePath = s"${BDGTableFuncs.getTableDirectory(spark,srcTable)}/${sampleName}*.bam"
+    val headerPath = BDGTableFuncs.getExactSamplePath(spark,samplePath)
+    saveAsBAMFile(spark.sqlContext,srcBAMRDD,outPathString,headerPath)
+  }
   //}
 
   //placeholder for distinct sampleId

@@ -13,6 +13,7 @@ class BAMCTASTestSuite  extends FunSuite with DataFrameSuiteBase with BeforeAndA
 
   val bamPath = getClass.getResource("/NA12878.slice.bam").getPath
   val bamCTAS =  getClass.getResource("/ctas").getPath
+  val bamIAS =  getClass.getResource("/ias").getPath
   val tableNameBAM = "reads"
 
 
@@ -33,7 +34,7 @@ class BAMCTASTestSuite  extends FunSuite with DataFrameSuiteBase with BeforeAndA
     ss
       .sql(
         s"""
-          |CREATE TABLE bam_ctas USING org.biodatageeks.datasources.BAM.BAMDataSource
+          |CREATE TABLE IF NOT EXISTS bam_ctas USING org.biodatageeks.datasources.BAM.BAMDataSource
           |OPTIONS(path "${bamCTAS}/*.bam")
           |AS SELECT * FROM ${tableNameBAM} WHERE sampleId='NA12878'
         """.stripMargin)
@@ -50,9 +51,54 @@ class BAMCTASTestSuite  extends FunSuite with DataFrameSuiteBase with BeforeAndA
     println(dfDst.count())
     assertDataFrameEquals(dfSrc,dfDst)
 
+  }
 
+  test("BAM  - IAS - INSERT INTO"){
+
+
+    val  ss = SequilaSession(spark)
+    SequilaRegister.register(ss)
+    ss
+      .sql(
+        s"""
+           |CREATE TABLE IF NOT EXISTS bam_ias USING org.biodatageeks.datasources.BAM.BAMDataSource
+           |OPTIONS(path "${bamIAS}/*.bam")
+        """.stripMargin)
+      .show()
+    //.explain(true)
+    ss
+      .sql(s"INSERT INTO bam_ias SELECT * FROM ${tableNameBAM}")
+      //.explain(true)
+        .show
+
+    val dfSrc = ss.sql(s"SELECT contigName,start,end FROM ${tableNameBAM} ORDER BY contigName, start")
+    println(dfSrc.count())
+    val dfDst = ss.sql(s"SELECT contigName,start,end FROM bam_ias ORDER BY contigName, start")
+    println(dfDst.count())
+    assertDataFrameEquals(dfSrc,dfDst)
 
   }
+
+  test("BAM  - IAS - INSERT OVERWRITE"){
+
+    val  ss = SequilaSession(spark)
+    SequilaRegister.register(ss)
+    ss
+      .sql(
+        s"""
+           |CREATE TABLE IF NOT EXISTS bam_ias USING org.biodatageeks.datasources.BAM.BAMDataSource
+           |OPTIONS(path "${bamIAS}/*.bam")
+        """.stripMargin)
+      .show()
+    //.explain(true)
+    ss
+      .sql(s"INSERT OVERWRITE TABLE bam_ias SELECT * FROM ${tableNameBAM} limit 10")
+      //.explain(true)
+      .show
+    val dfDst = ss.sql(s"SELECT contigName,start,end FROM bam_ias ORDER BY contigName, start")
+    assert(dfDst.count() === 10)
+  }
+
 
   after{
 
