@@ -20,6 +20,7 @@ SeQuiLa is an ANSI-SQL compliant solution for efficient genomic intervals queryi
 * SeQuiLa is elastic:
 
    - growing catalogue of utility functions and operations including: `featureCounts`, `countOverlaps` and `coverage`
+   - standard SQL DML/DDL like SPJG (select, predicate, join, group by), CTaS (create table as select), IaS (insert table as select) for easy BAM files manipulation
    - exposed parameters for further performance tuning
    - integration with third-party tools through SparkSQL Thrift JDBC driver
    - can be used natively in R with sparklyr-sequila package

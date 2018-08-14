@@ -38,8 +38,8 @@ class BAMCTASTestSuite  extends FunSuite with DataFrameSuiteBase with BeforeAndA
           |OPTIONS(path "${bamCTAS}/*.bam")
           |AS SELECT * FROM ${tableNameBAM} WHERE sampleId='NA12878'
         """.stripMargin)
-           .show()
-          //.explain(true)
+          // .show()
+          .explain(true)
 
     ss
     .sql(s"DESC FORMATTED  bam_ctas")
@@ -64,12 +64,12 @@ class BAMCTASTestSuite  extends FunSuite with DataFrameSuiteBase with BeforeAndA
            |CREATE TABLE IF NOT EXISTS bam_ias USING org.biodatageeks.datasources.BAM.BAMDataSource
            |OPTIONS(path "${bamIAS}/*.bam")
         """.stripMargin)
-      .show()
-    //.explain(true)
+    //  .show()
+    .explain(true)
     ss
       .sql(s"INSERT INTO bam_ias SELECT * FROM ${tableNameBAM}")
-      //.explain(true)
-        .show
+      .explain(true)
+      //  .show
 
     val dfSrc = ss.sql(s"SELECT contigName,start,end FROM ${tableNameBAM} ORDER BY contigName, start")
     println(dfSrc.count())
@@ -89,12 +89,12 @@ class BAMCTASTestSuite  extends FunSuite with DataFrameSuiteBase with BeforeAndA
            |CREATE TABLE IF NOT EXISTS bam_ias USING org.biodatageeks.datasources.BAM.BAMDataSource
            |OPTIONS(path "${bamIAS}/*.bam")
         """.stripMargin)
-      .show()
-    //.explain(true)
+    //  .show()
+    .explain(true)
     ss
       .sql(s"INSERT OVERWRITE TABLE bam_ias SELECT * FROM ${tableNameBAM} limit 10")
-      //.explain(true)
-      .show
+      .explain(true)
+      //.show
     val dfDst = ss.sql(s"SELECT contigName,start,end FROM bam_ias ORDER BY contigName, start")
     assert(dfDst.count() === 10)
   }
