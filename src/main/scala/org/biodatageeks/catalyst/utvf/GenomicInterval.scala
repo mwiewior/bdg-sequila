@@ -11,7 +11,7 @@ case class GenomicInterval(
                           start:Int,
                           end:Int,
                           output: Seq[Attribute]
-                          )  extends LeafNode with MultiInstanceRelation{
+                          )  extends LeafNode with MultiInstanceRelation with Serializable {
 
   override def newInstance(): GenomicInterval = copy(output = output.map(_.newInstance()))
 

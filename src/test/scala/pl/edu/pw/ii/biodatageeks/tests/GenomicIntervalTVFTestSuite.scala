@@ -21,7 +21,6 @@ test("Test bdg_grange TVF"){
        |
        """.stripMargin
 
-  //val query = "SELECT * FROM genomic_interval('chr1',1,1)"
   assert(ss
     .sql(query)
         .first()
