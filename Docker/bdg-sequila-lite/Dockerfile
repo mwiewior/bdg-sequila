@@ -62,10 +62,11 @@ COPY bin/featureCounts.sh /tmp/bdg-toolset/featureCounts
 
 USER tempuser
 
-#WORKDIR /home/tempuser
+WORKDIR /home/tempuser
 ##just to download all depencies and speedup start
 RUN bdg-shell -i /tmp/bdg-toolset/warmcache.scala build
 
+WORKDIR /tmp
 
 USER root
 EXPOSE 4040 10000

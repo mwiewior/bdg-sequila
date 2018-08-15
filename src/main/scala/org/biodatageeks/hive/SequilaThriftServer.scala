@@ -18,6 +18,7 @@ object SequilaThriftServer extends Logging {
   var listener: HiveThriftServer2ListenerSeq = _
 
   def startWithContext(ss: SequilaSession): Unit = {
+    System.setSecurityManager(null)
     val server = new HiveThriftServer2Seq(ss)
 
     val executionHive = HiveUtils.newClientForExecution(
