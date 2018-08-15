@@ -15,13 +15,6 @@ ENV BDG_VERSION={{COMPONENT_VERSION}}
 
 
 
-RUN apt-get update && apt-get install --yes git sudo curl libssl-dev libxml2-dev
-
-
-
-
-
-
 RUN mkdir /tmp/bdg-toolset
 
 ###once the repo is public we can use git instead
@@ -34,14 +27,7 @@ COPY warmcache.scala /tmp/bdg-toolset/warmcache.scala
 COPY bin/bdg-start-thriftserver.sh /tmp/bdg-toolset/bdg-start-thriftserver
 COPY bin/bdg-stop-thriftserver.sh /tmp/bdg-toolset/bdg-stop-thriftserver
 
-COPY bin/bdg-sequilaR.sh /tmp/bdg-toolset/bdg-sequilaR
 
-#featureCounts scripts
-COPY bin/featureCounts.sh /tmp/bdg-toolset/featureCounts
-RUN bash -c " if [[ $BDG_VERSION =~ SNAPSHOT ]]; then \
-    wget https://zsibio.ii.pw.edu.pl/nexus/repository/maven-snapshots/org/biodatageeks/bdg-sequila_2.11/${BDG_VERSION}/bdg-sequila_2.11-${BDG_VERSION}-assembly.jar -O /tmp/bdg-toolset/bdg-sequila-assembly-${BDG_VERSION}.jar ; \
-    else wget https://zsibio.ii.pw.edu.pl/nexus/repository/maven-releases/org/biodatageeks/bdg-sequila_2.11/${BDG_VERSION}/bdg-sequila_2.11-${BDG_VERSION}-assembly.jar -O /tmp/bdg-toolset/bdg-sequila-assembly-${BDG_VERSION}.jar ; \
-    fi"
 
 #copy test data
 COPY NA12878.slice.bam /tmp/NA12878.slice.bam
@@ -69,10 +55,16 @@ COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
 
+#featureCounts scripts
+COPY bin/featureCounts.sh /tmp/bdg-toolset/featureCounts
+RUN bash -c " if [[ $BDG_VERSION =~ SNAPSHOT ]]; then \
+    wget https://zsibio.ii.pw.edu.pl/nexus/repository/maven-snapshots/org/biodatageeks/bdg-sequila_2.11/${BDG_VERSION}/bdg-sequila_2.11-${BDG_VERSION}-assembly.jar -O /tmp/bdg-toolset/bdg-sequila-assembly-${BDG_VERSION}.jar ; \
+    else wget https://zsibio.ii.pw.edu.pl/nexus/repository/maven-releases/org/biodatageeks/bdg-sequila_2.11/${BDG_VERSION}/bdg-sequila_2.11-${BDG_VERSION}-assembly.jar -O /tmp/bdg-toolset/bdg-sequila-assembly-${BDG_VERSION}.jar ; \
+    fi"
 
 USER tempuser
 
-WORKDIR /home/tempuser
+#WORKDIR /home/tempuser
 ##just to download all depencies and speedup start
 RUN bdg-shell -i /tmp/bdg-toolset/warmcache.scala build
 

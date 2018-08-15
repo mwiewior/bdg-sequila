@@ -9,12 +9,12 @@ import org.apache.spark.sql.hive.thriftserver.HiveThriftServer2Seq.HiveThriftSer
 import org.apache.spark.sql.hive.thriftserver._
 import org.apache.spark.sql.{SQLContext, SequilaSession, SparkSession}
 import org.biodatageeks.utils.{SequilaRegister, UDFRegister}
-import org.apache.spark.sql.hive.thriftserver.ui.ThriftServerTab
+import org.apache.spark.sql.hive.thriftserver.ui.{ThriftServerTab, ThriftServerTabSeq}
 
 
 
 object SequilaThriftServer extends Logging {
-  var uiTab: Option[ThriftServerTab] = None
+  var uiTab: Option[ThriftServerTabSeq] = None
   var listener: HiveThriftServer2ListenerSeq = _
 
   def startWithContext(ss: SequilaSession): Unit = {
@@ -29,7 +29,7 @@ object SequilaThriftServer extends Logging {
     listener = new HiveThriftServer2ListenerSeq(server, ss.sqlContext.conf)
     ss.sqlContext.sparkContext.addSparkListener(listener)
     uiTab = if (ss.sqlContext.sparkContext.getConf.getBoolean("spark.ui.enabled", true)) {
-      Some(new ThriftServerTab(ss.sqlContext.sparkContext))
+      Some(new ThriftServerTabSeq(ss.sqlContext.sparkContext,listener))
     } else {
       None
     }
@@ -40,7 +40,7 @@ object SequilaThriftServer extends Logging {
 
     val spark = SparkSession
       .builder
-      // .master("local[1]")
+       .master("local[1]")
       .getOrCreate
     val ss = new SequilaSession(spark)
     UDFRegister.register(ss)
