@@ -16,7 +16,7 @@ import org.apache.spark.ui.{SparkUI, SparkUITab}
 private[thriftserver] class ThriftServerTabSeq(sparkContext: SparkContext, list: HiveThriftServer2ListenerSeq)
   extends SparkUITab(getSparkUI(sparkContext), "sqlserver") with Logging {
 
-  override val name = "JDBC/ODBC Server"
+  override val name = "SeQuiLa JDBC/ODBC Server"
 
   val parent = getSparkUI(sparkContext)
   val listener = list

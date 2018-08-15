@@ -19,7 +19,6 @@ private[ui] class ThriftServerPageSeq(parent: ThriftServerTabSeq) extends WebUIP
 
   /** Render the page */
   def render(request: HttpServletRequest): Seq[Node] = {
-    if(listener == null) println("Nullllll")
     val content =
       listener.synchronized { // make sure all parts in this page are consistent
         generateBasicStats() ++
