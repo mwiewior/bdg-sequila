@@ -1,4 +1,4 @@
 
 #TODO add mounting folder for data
 docker run --rm -e USERID=$UID -e GROUPID=$(id -g) -d \
--p 12000:10000 -p 4040:4040 --name bdg-sequila biodatageeks/bdg-sequila-lite bdg-start-thriftserver --master=local[2] --driver-memory=4g
+-p 10000:10000 -p 4040:4040 --name bdg-sequila biodatageeks/bdg-sequila-lite bdg-start-thriftserver --master=local[2] --driver-memory=4g

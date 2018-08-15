@@ -57,10 +57,8 @@ RUN chmod +x /usr/local/bin/entrypoint.sh
 
 #featureCounts scripts
 COPY bin/featureCounts.sh /tmp/bdg-toolset/featureCounts
-RUN bash -c " if [[ $BDG_VERSION =~ SNAPSHOT ]]; then \
-    wget https://zsibio.ii.pw.edu.pl/nexus/repository/maven-snapshots/org/biodatageeks/bdg-sequila_2.11/${BDG_VERSION}/bdg-sequila_2.11-${BDG_VERSION}-assembly.jar -O /tmp/bdg-toolset/bdg-sequila-assembly-${BDG_VERSION}.jar ; \
-    else wget https://zsibio.ii.pw.edu.pl/nexus/repository/maven-releases/org/biodatageeks/bdg-sequila_2.11/${BDG_VERSION}/bdg-sequila_2.11-${BDG_VERSION}-assembly.jar -O /tmp/bdg-toolset/bdg-sequila-assembly-${BDG_VERSION}.jar ; \
-    fi"
+
+
 
 USER tempuser
 

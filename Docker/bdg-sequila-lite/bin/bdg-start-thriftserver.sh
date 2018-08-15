@@ -39,6 +39,14 @@ fi
 
 export SUBMIT_USAGE_FUNCTION=usage
 
+###Download fresh assembly from maven
+echo "Downloading SeQuiLa jar please wait..."
+if [[ $BDG_VERSION =~ SNAPSHOT ]]; then
+    wget https://zsibio.ii.pw.edu.pl/nexus/repository/maven-snapshots/org/biodatageeks/bdg-sequila_2.11/${BDG_VERSION}/bdg-sequila_2.11-${BDG_VERSION}-assembly.jar -O /tmp/bdg-toolset/bdg-sequila-assembly-${BDG_VERSION}.jar ;
+    else wget https://zsibio.ii.pw.edu.pl/nexus/repository/maven-releases/org/biodatageeks/bdg-sequila_2.11/${BDG_VERSION}/bdg-sequila_2.11-${BDG_VERSION}-assembly.jar -O /tmp/bdg-toolset/bdg-sequila-assembly-${BDG_VERSION}.jar ;
+fi
+
+
 exec "${SPARK_HOME}"/bin/spark-submit --class $CLASS --name "Thrift JDBC/ODBC Server"  \
 --conf spark.sql.hive.thriftServer.singleSession=true "$@" /tmp/bdg-toolset/bdg-sequila-assembly-${BDG_VERSION}.jar
 
