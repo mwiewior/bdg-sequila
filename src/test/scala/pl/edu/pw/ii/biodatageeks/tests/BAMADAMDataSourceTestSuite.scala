@@ -129,6 +129,7 @@ class BAMADAMDataSourceTestSuite extends FunSuite with DataFrameSuiteBase with B
   after{
     spark.sql(s"DROP TABLE IF EXISTS  ${tableNameBAM}")
     writer.flush()
+    Metrics.stopRecording()
   }
 
 }
