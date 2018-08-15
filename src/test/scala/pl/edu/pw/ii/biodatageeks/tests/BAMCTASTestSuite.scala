@@ -6,6 +6,7 @@ import com.holdenkarau.spark.testing.{DataFrameSuiteBase, SharedSparkContext}
 import htsjdk.samtools.SAMRecord
 import org.apache.spark.sql.SequilaSession
 import org.bdgenomics.utils.instrumentation.{Metrics, MetricsListener, RecordedMetrics}
+import org.biodatageeks.preprocessing.coverage.CoverageStrategy
 import org.biodatageeks.utils.SequilaRegister
 import org.scalatest.{BeforeAndAfter, FunSuite}
 
@@ -99,6 +100,16 @@ class BAMCTASTestSuite  extends FunSuite with DataFrameSuiteBase with BeforeAndA
     assert(dfDst.count() === 10)
   }
 
+  test("BAM - bdg_coverage - base - show"){
+    val session = SequilaSession(spark)
+    SequilaRegister.register(session)
+
+    session.experimental.extraStrategies = new CoverageStrategy(session) :: Nil
+
+    println(session.sql(s"SELECT * FROM bdg_coverage('${tableNameBAM}','NA12878','bdg') order by start").count)
+    //session.sql(s”SELECT * FROM bdg_coverage(’${tableNameBAM}’,’NA12878',‘bdg’, ‘bases’) order by start”).count
+
+  }
 
   after{
 
