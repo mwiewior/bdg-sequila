@@ -144,6 +144,10 @@ trait BDGAlignFileReaderWriter [T <: BDGAlignInputFormat]{
 
     setLocalConf(sqlContext)
     setHadoopConf(sqlContext)
+    val ctasCmd = sqlContext.getConf(BDGInternalParams.BAMCTASCmd,"false")
+      .toLowerCase
+      .toBoolean
+
     val spark = sqlContext
       .sparkSession
     lazy val alignments = spark
@@ -170,7 +174,7 @@ trait BDGAlignFileReaderWriter [T <: BDGAlignInputFormat]{
             val record = new Array[Any](requiredColumns.length)
             //requiredColumns.
             for (i <- 0 to requiredColumns.length - 1) {
-              record(i) = getValueFromColumn(requiredColumns(i), r, sampleId,serializer)
+              record(i) = getValueFromColumn(requiredColumns(i), r, sampleId,serializer, ctasCmd)
             }
             Row.fromSeq(record)
         }
@@ -216,12 +220,15 @@ trait BDGAlignFileReaderWriter [T <: BDGAlignInputFormat]{
         .sparkContext
         .hadoopConfiguration
         .unset(BDGInternalParams.BAMCTASOutputPath)
+      sqlContext.setConf(BDGInternalParams.BAMCTASCmd,"false")
     }
 
 
   }
 
-  private def getValueFromColumn(colName:String,r:SAMRecord, sampleId:String, serializer: BDGFastSerializer): Any = {
+  private def getValueFromColumn(colName:String,r:SAMRecord, sampleId:String, serializer: BDGFastSerializer,ctasCmd : Boolean): Any = {
+
+
 
 
     if(colName == columnNames(0)) sampleId
@@ -234,7 +241,9 @@ trait BDGAlignFileReaderWriter [T <: BDGAlignInputFormat]{
     else if (colName == columnNames(7)) r.getReferenceName
     else if (colName == columnNames(8)) r.getFlags
     else if (colName == columnNames(9)) r.getMateReferenceIndex
-    else if (colName == columnNames(10)) serializer.fst.asByteArray(r)
+    else if (colName == columnNames(10)) if(ctasCmd)
+        serializer.fst.asByteArray(r)
+      else None
     else throw new Exception("Unknown column")
 
   }
@@ -409,13 +418,13 @@ class BDGAlignmentRelation[T <:BDGAlignInputFormat](path:String, refPath:Option[
       readBAMFileToBAMBDGRecord(sqlContext, prunedPaths, requiredColumns)
     }
 
-  override  def insert(data: DataFrame,overwrite:Boolean) = {
- println("Rel")
-  }
+  override  def insert(data: DataFrame,overwrite:Boolean) = ???
 
   def insertWithHeader(data:DataFrame, overwrite:Boolean, srcTable:String) = {
 
+    sqlContext.setConf(BDGInternalParams.BAMCTASCmd,"true")
     import spark.implicits._
+
     val ds = data
       .as[BDGSAMRecord]
     val sampleName = ds.first().sampleId
@@ -437,7 +446,7 @@ class BDGAlignmentRelation[T <:BDGAlignInputFormat](path:String, refPath:Option[
 
     fos.close()
 
-    val srcBAMRDD =
+   lazy val srcBAMRDD =
       ds
         .rdd
         .mapPartitions(p =>{

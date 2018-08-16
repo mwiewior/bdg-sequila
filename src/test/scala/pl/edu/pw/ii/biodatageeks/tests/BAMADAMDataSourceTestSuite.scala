@@ -4,6 +4,7 @@ import java.io.{OutputStreamWriter, PrintWriter}
 
 import com.holdenkarau.spark.testing.{DataFrameSuiteBase, SharedSparkContext}
 import org.bdgenomics.utils.instrumentation.{Metrics, MetricsListener, RecordedMetrics}
+import org.biodatageeks.utils.BDGInternalParams
 import org.scalatest.{BeforeAndAfter, FunSuite}
 
 class BAMADAMDataSourceTestSuite extends FunSuite with DataFrameSuiteBase with BeforeAndAfter with SharedSparkContext{
@@ -61,6 +62,17 @@ class BAMADAMDataSourceTestSuite extends FunSuite with DataFrameSuiteBase with B
 
     spark
       .sql(s"SELECT contigName,start,end FROM ${tableNameBAM} limit 1").show()
+  }
+
+  test("BAM - select * limit - skipping SAMRecord" ){
+
+    assert(spark
+      .sql(s"SELECT SAMRecord FROM ${tableNameBAM} limit 1").first().get(0) === null)
+
+   sqlContext.setConf(BDGInternalParams.BAMCTASCmd,"true")
+    assert(spark
+      .sql(s"SELECT SAMRecord FROM ${tableNameBAM} limit 1").first().get(0) != null)
+    sqlContext.setConf(BDGInternalParams.BAMCTASCmd,"false")
   }
 
   test("BAM - Row count ADAMDataSource2"){

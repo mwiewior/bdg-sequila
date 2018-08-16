@@ -7,6 +7,7 @@ object BDGInternalParams {
   final val BAMCTASFilter = "spark.biodatageeks.bam.bam_ctas_filter"
   final val BAMCTASLimit = "spark.biodatageeks.bam.bam_ctas_limit"
   final val BAMCTASHeaderPath =  "spark.biodatageeks.bam.bam_header_path"
-  final val BAMCTASOutputPath ="spark.biodatageeks.bam.output_path"
+  final val BAMCTASOutputPath = "spark.biodatageeks.bam.output_path"
+  final val BAMCTASCmd = "spark.biodatageeks.bam.bam_ctas_cmd"
 
 }

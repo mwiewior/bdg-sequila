@@ -68,9 +68,11 @@ class BAMDataSource extends DataSourceRegister
   override def createRelation(sqlContext: SQLContext, mode: SaveMode,
                               parameters: Map[String, String], data: DataFrame): BaseRelation = {
 
-
+    sqlContext.setConf(BDGInternalParams.BAMCTASCmd,"true")
     val spark = sqlContext.sparkSession
     save(spark, parameters, mode ,data)
+    //revert to default after saving records
+    sqlContext.setConf(BDGInternalParams.BAMCTASCmd,"false")
     createRelation(sqlContext, parameters)
   }
 

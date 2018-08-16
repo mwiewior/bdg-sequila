@@ -1,9 +1,10 @@
 package pl.edu.pw.ii.biodatageeks.tests
 
-import java.io.{OutputStreamWriter, PrintWriter}
+import java.io.{File, OutputStreamWriter, PrintWriter}
 
 import com.holdenkarau.spark.testing.{DataFrameSuiteBase, SharedSparkContext}
 import htsjdk.samtools.SAMRecord
+import org.apache.commons.io.FileUtils
 import org.apache.spark.sql.SequilaSession
 import org.bdgenomics.utils.instrumentation.{Metrics, MetricsListener, RecordedMetrics}
 import org.biodatageeks.preprocessing.coverage.CoverageStrategy
@@ -30,6 +31,7 @@ class BAMCTASTestSuite  extends FunSuite with DataFrameSuiteBase with BeforeAndA
   }
 
   test("BAM - CTAS" ){
+    FileUtils.deleteQuietly(new File(s"${bamCTAS}/NA12878.bam") )
     val  ss = SequilaSession(spark)
     SequilaRegister.register(ss)
     ss
@@ -52,11 +54,12 @@ class BAMCTASTestSuite  extends FunSuite with DataFrameSuiteBase with BeforeAndA
     println(dfDst.count())
     assertDataFrameEquals(dfSrc,dfDst)
 
+
   }
 
   test("BAM  - IAS - INSERT INTO"){
 
-
+    FileUtils.deleteQuietly(new File(s"${bamIAS}/NA12878.bam") )
     val  ss = SequilaSession(spark)
     SequilaRegister.register(ss)
     ss
