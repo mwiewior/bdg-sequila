@@ -41,6 +41,7 @@ object SequilaThriftServer extends Logging {
 
     val spark = SparkSession
       .builder
+        .enableHiveSupport()
        //.master("local[1]")
       .getOrCreate
     val ss = new SequilaSession(spark)

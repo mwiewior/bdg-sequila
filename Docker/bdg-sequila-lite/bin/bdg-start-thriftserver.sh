@@ -46,9 +46,12 @@ if [[ $BDG_VERSION =~ SNAPSHOT ]]; then
 else wget https://zsibio.ii.pw.edu.pl/nexus/repository/maven-releases/org/biodatageeks/bdg-sequila_2.11/${BDG_VERSION}/bdg-sequila_2.11-${BDG_VERSION}-assembly.jar -O /tmp/bdg-sequila-assembly-${BDG_VERSION}.jar
 fi
 
+#--conf spark.sql.catalogImplementation=hive
+
+exec "${SPARK_HOME}"/bin/spark-shell -i /tmp/bdg-toolset/sequilathriftinit.scala  --conf spark.sql.warehouse.dir=/data/input/bams --jars /tmp/bdg-sequila-assembly-${BDG_VERSION}.jar
 
 exec "${SPARK_HOME}"/bin/spark-submit --class $CLASS --name "Thrift JDBC/ODBC Server"  \
---conf spark.sql.hive.thriftServer.singleSession=true --conf spark.sql.catalogImplementation=hive "$@" /tmp/bdg-sequila-assembly-${BDG_VERSION}.jar
+--conf spark.sql.hive.thriftServer.singleSession=true  "$@" /tmp/bdg-sequila-assembly-${BDG_VERSION}.jar
 
 PG_PID=$(ps -o pid,cmd -C java | grep "org.apache.spark.sql.hive.thriftserver.SequilaThriftServer" | sed -e 's/^[ \t]*//' | cut -d' ' -f 1)
 while [ -e /proc/${PG_PID} ]; do sleep 100; done

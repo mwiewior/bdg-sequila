@@ -32,6 +32,7 @@ COPY bin/bdg-stop-thriftserver.sh /tmp/bdg-toolset/bdg-stop-thriftserver
 #copy test data
 COPY NA12878.slice.bam /tmp/NA12878.slice.bam
 COPY unittest.scala /tmp/unittest.scala
+COPY sequilathriftinit.scala /tmp/bdg-toolset/sequilathriftinit.scala
 RUN ln -s /tmp/unittest.scala /tmp/smoketest.scala
 
 #copy ivy ivySettings
@@ -65,6 +66,8 @@ USER tempuser
 WORKDIR /home/tempuser
 ##just to download all depencies and speedup start
 RUN bdg-shell -i /tmp/bdg-toolset/warmcache.scala build
+
+RUN rm -rf /home/tempuser/spark-warehouse
 
 WORKDIR /tmp
 
