@@ -10,4 +10,6 @@ object BDGInternalParams {
   final val BAMCTASOutputPath = "spark.biodatageeks.bam.output_path"
   final val BAMCTASCmd = "spark.biodatageeks.bam.bam_ctas_cmd"
 
+  /*refenenced column*/
+  final val SAMPLE_COLUMN_NAME = "sampleId"
 }

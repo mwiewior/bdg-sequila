@@ -418,6 +418,14 @@ class BDGAlignmentRelation[T <:BDGAlignInputFormat](path:String, refPath:Option[
       readBAMFileToBAMBDGRecord(sqlContext, prunedPaths, requiredColumns)
     }
 
+  //optimized scan for queries like SELECT (distinct )sampleId FROM  BDGAlignmentRelation do not touch files, only file names
+  def buildScanSampleId = {
+    spark
+      .sparkContext
+      .parallelize(BDGTableFuncs.getAllSamples(spark,path))
+      .map(r=>Row.fromSeq(Seq(r)) )
+  }
+
   override  def insert(data: DataFrame,overwrite:Boolean) = ???
 
   def insertWithHeader(data:DataFrame, overwrite:Boolean, srcTable:String) = {

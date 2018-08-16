@@ -7,7 +7,7 @@ import org.apache.spark.sql.catalyst.analysis.CastSupport
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow, expressions}
 import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, AttributeSet, EmptyRow, Expression, Literal, NamedExpression, SpecificInternalRow, UnsafeProjection}
 import org.apache.spark.sql.catalyst.planning.PhysicalOperation
-import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
+import org.apache.spark.sql.catalyst.plans.logical.{Aggregate, LogicalPlan}
 import org.apache.spark.sql.catalyst.plans.physical.{HashPartitioning, UnknownPartitioning}
 import org.apache.spark.sql.execution.{RowDataSourceScanExec, SparkPlan}
 import org.apache.spark.sql.execution.datasources.DataSourceStrategy.selectFilters
@@ -16,6 +16,10 @@ import org.apache.spark.sql._
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.types.{StringType, StructType}
 import org.apache.spark.unsafe.types.UTF8String
+import org.biodatageeks.datasources.BAM.BDGAlignmentRelation
+import org.biodatageeks.datasources.BDGInputDataType
+import org.biodatageeks.utils.BDGInternalParams
+import org.seqdoop.hadoop_bam.BAMBDGInputFormat
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -24,6 +28,25 @@ case class SequilaDataSourceStrategy(spark: SparkSession) extends Strategy with 
 
   def conf = spark.sqlContext.conf
   def apply(plan: LogicalPlan): Seq[execution.SparkPlan] = plan match {
+
+    //optimized strategy for queries like SELECT (distinct )sampleId FROM  BDGAlignmentRelation
+    case a: Aggregate if a.schema.length == 1 && a.schema.head.name == BDGInternalParams.SAMPLE_COLUMN_NAME => {
+      a.child match {
+        case PhysicalOperation(projects, filters, l@LogicalRelation(t: PrunedFilteredScan, _, _)) => {
+          l.catalogTable.get.provider match {
+            case Some(BDGInputDataType.BAMInputDataType) => {
+              pruneFilterProject(
+                l,
+                projects,
+                filters,
+                (a, f) => toCatalystRDD(l, a, t.asInstanceOf[BDGAlignmentRelation[BAMBDGInputFormat]].buildScanSampleId)) :: Nil
+            }
+            case _ => Nil
+          }
+        }
+        case _ => Nil
+      }
+    }
     case PhysicalOperation(projects, filters, l @ LogicalRelation(t: CatalystScan, _, _)) =>
       pruneFilterProjectRaw(
         l,
