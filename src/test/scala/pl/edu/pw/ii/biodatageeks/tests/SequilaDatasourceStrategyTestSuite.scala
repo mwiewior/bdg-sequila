@@ -8,9 +8,15 @@ class SequilaDatasourceStrategyTestSuite  extends  BAMBaseTestSuite {
   test("Simple select over a BAM table") {
     val  ss = SequilaSession(spark)
     SequilaRegister.register(ss)
-    assert(ss
-      .sql(s"SELECT distinct sampleId FROM ${tableNameBAM}")
-      .first()
+    assert(
+      ss
+      .sql(s"SELECT distinct sampleId FROM ${tableNameBAM} LIMIT 10")
+        .count() === 1)
+
+    assert(
+      ss
+        .sql(s"SELECT distinct sampleId FROM ${tableNameBAM} LIMIT 10")
+        .first()
       .getString(0) === "NA12878")
   }
 

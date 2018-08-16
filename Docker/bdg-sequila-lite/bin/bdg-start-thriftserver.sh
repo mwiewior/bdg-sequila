@@ -48,7 +48,7 @@ fi
 
 
 exec "${SPARK_HOME}"/bin/spark-submit --class $CLASS --name "Thrift JDBC/ODBC Server"  \
---conf spark.sql.hive.thriftServer.singleSession=true "$@" /tmp/bdg-sequila-assembly-${BDG_VERSION}.jar
+--conf spark.sql.hive.thriftServer.singleSession=true --conf spark.sql.catalogImplementation=hive "$@" /tmp/bdg-sequila-assembly-${BDG_VERSION}.jar
 
 PG_PID=$(ps -o pid,cmd -C java | grep "org.apache.spark.sql.hive.thriftserver.SequilaThriftServer" | sed -e 's/^[ \t]*//' | cut -d' ' -f 1)
 while [ -e /proc/${PG_PID} ]; do sleep 100; done

@@ -41,7 +41,7 @@ RUN chmod +x /tmp/bdg-toolset/*
 
 RUN mkdir /usr/local/spark/logs && chmod -R 777 /usr/local/spark/logs
 
-RUN mkdir -p /data/input && mkdir -p /data/output  && chmod -R 777 /data
+RUN mkdir -p /data/input && mkdir -p /data/output && mkdir -p /data/input/bams  && chmod -R 777 /data
 ENV PATH="/tmp/bdg-toolset:/usr/local/spark/bin/:${PATH}"
 
 RUN gpg --keyserver ha.pool.sks-keyservers.net --recv-keys B42F6819007F00F88E364FD4036A9C25BF357DD4

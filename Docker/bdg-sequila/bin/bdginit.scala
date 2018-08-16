@@ -15,7 +15,7 @@ ss.sqlContext.setConf("spark.biodatageeks.rangejoin.maxGap","0")
 ss.sqlContext.setConf("spark.biodatageeks.bam.predicatePushdown","false")
 
 /*GKL Inflate disabled by default - better for large seq scans than index lookups*/
-ss.sqlContext.setConf("spark.biodatageeks.bam.useGKLInflate","false")
+  ss.sqlContext.setConf("spark.biodatageeks.bam.useGKLInflate","false")
 
 /*spark-bam disabled by default*/
 ss.sqlContext.setConf("spark.biodatageeks.bam.useSparkBAM","false")

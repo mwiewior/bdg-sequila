@@ -47,6 +47,7 @@ case class SequilaDataSourceStrategy(spark: SparkSession) extends Strategy with 
         case _ => Nil
       }
     }
+
     case PhysicalOperation(projects, filters, l @ LogicalRelation(t: CatalystScan, _, _)) =>
       pruneFilterProjectRaw(
         l,

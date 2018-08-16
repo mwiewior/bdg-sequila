@@ -138,6 +138,12 @@ class BAMADAMDataSourceTestSuite extends FunSuite with DataFrameSuiteBase with B
       .first().getString(0) == "NA12878")
   }
 
+  test("BAM - select only bases"){
+    spark
+      .sql(s"SELECT sequence FROM ${tableNameBAM} limit 5")
+      .show()
+  }
+
   after{
     spark.sql(s"DROP TABLE IF EXISTS  ${tableNameBAM}")
     writer.flush()

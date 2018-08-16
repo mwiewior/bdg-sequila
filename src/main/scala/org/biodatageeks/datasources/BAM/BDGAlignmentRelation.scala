@@ -33,7 +33,7 @@ case class BDGSAMRecord(sampleId: String,
                      cigar:String,
                      mapq:Int,
                      baseq: String,
-                     reference:String,
+                     sequence:String,
                      flags:Int,
                      materefind:Int,
                      SAMRecord: Option[Array[Byte]])
@@ -53,7 +53,7 @@ trait BDGAlignFileReaderWriter [T <: BDGAlignInputFormat]{
     "cigar",
     "mapq",
     "baseq",
-    "reference",
+    "sequence",
     "flags",
     "materefind",
     "SAMRecord"
@@ -238,7 +238,7 @@ trait BDGAlignFileReaderWriter [T <: BDGAlignInputFormat]{
     else if (colName == columnNames(4)) r.getCigar.toString
     else if (colName == columnNames(5)) r.getMappingQuality
     else if (colName == columnNames(6)) r.getBaseQualityString
-    else if (colName == columnNames(7)) r.getReferenceName
+    else if (colName == columnNames(7)) r.getReadString
     else if (colName == columnNames(8)) r.getFlags
     else if (colName == columnNames(9)) r.getMateReferenceIndex
     else if (colName == columnNames(10)) if(ctasCmd)
@@ -466,13 +466,5 @@ class BDGAlignmentRelation[T <:BDGAlignInputFormat](path:String, refPath:Option[
     val headerPath = BDGTableFuncs.getExactSamplePath(spark,samplePath)
     saveAsBAMFile(spark.sqlContext,srcBAMRDD,outPathString,headerPath)
   }
-  //}
-
-  //placeholder for distinct sampleId
-//  override def  buildScan(requiredColumns: Seq[Attribute], filters: Seq[Expression]): RDD[Row] ={
-//    spark
-//      .sparkContext
-//      .emptyRDD[Row]
-//  }
 
 }
