@@ -49,10 +49,11 @@ fi
 #--conf spark.sql.catalogImplementation=hive
 
 
+#"-Dderby.system.home=${SEQ_METASTORE_LOCATION}/derby"
 export SEQ_METASTORE_LOCATION=/data/output
 #exec "${SPARK_HOME}"/bin/spark-shell -i /tmp/bdg-toolset/sequilathriftinit.scala  --conf spark.sql.warehouse.dir=/data/input/bams --jars /tmp/bdg-sequila-assembly-${BDG_VERSION}.jar
 
-exec "${SPARK_HOME}"/bin/spark-submit --class $CLASS --name "Thrift JDBC/ODBC Server"  \
+exec "${SPARK_HOME}"/bin/spark-submit --conf spark.driver.extraJavaOptions="-Dseq.metastore.dir=${SEQ_METASTORE_LOCATION}/metastore" --class $CLASS --name "Thrift JDBC/ODBC Server"  \
 --conf spark.sql.hive.thriftServer.singleSession=true  "$@" /tmp/bdg-sequila-assembly-${BDG_VERSION}.jar
 
 PG_PID=$(ps -o pid,cmd -C java | grep "org.apache.spark.sql.hive.thriftserver.SequilaThriftServer" | sed -e 's/^[ \t]*//' | cut -d' ' -f 1)

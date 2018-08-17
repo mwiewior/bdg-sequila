@@ -47,9 +47,8 @@ object SequilaThriftServer extends Logging {
         .config("spark.sql.hive.thriftServer.singleSession","true")
         .config("spark.sql.warehouse.dir",sys.env.getOrElse("SEQ_METASTORE_LOCATION",System.getProperty("user.dir")) )
       .enableHiveSupport()
-       //.master("local[1]")
+     //  .master("local[1]")
       .getOrCreate
-
     val ss = new SequilaSession(spark)
     UDFRegister.register(ss)
     SequilaRegister.register(ss)

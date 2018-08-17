@@ -71,6 +71,8 @@ RUN rm -rf /home/tempuser/spark-warehouse
 
 WORKDIR /tmp
 
+#COPY bdg-sequila-assembly-{{COMPONENT_VERSION}}.jar /tmp/bdg-sequila-assembly-${BDG_VERSION}.jar
+
 USER root
 EXPOSE 4040 10000
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]

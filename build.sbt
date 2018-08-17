@@ -55,7 +55,7 @@ libraryDependencies += "org.hammerlab.bam" %% "load" % "1.2.0-M1"
 libraryDependencies += "de.ruedigermoeller" % "fst" % "2.57"
 libraryDependencies += "org.apache.commons" % "commons-lang3" % "3.7"
 libraryDependencies += "org.eclipse.jetty" % "jetty-servlet" % "9.3.24.v20180605"
-
+libraryDependencies += "org.apache.derby" % "derbyclient" % "10.14.2.0"
 
 
 
@@ -65,6 +65,8 @@ fork in Test := true
 //parallelExecution in Test := false
 //javaOptions in Test += "-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=9999"
 //javaOptions in run += "-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=9999"
+
+//javaOptions in run += "-Dseq.metastore.dir=/Users/marek/data/output/metastore"
 
 javaOptions in Test ++= Seq(
   "-Dlog4j.debug=false",
