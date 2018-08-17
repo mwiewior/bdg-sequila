@@ -2,6 +2,9 @@
 package org.apache.spark.sql.hive.thriftserver
 
 
+import java.io.File
+
+import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.internal.Logging
 import org.apache.spark.sql.hive.HiveUtils
 import org.apache.spark.sql.hive.thriftserver.HiveThriftServer2.HiveThriftServer2Listener
@@ -17,13 +20,14 @@ object SequilaThriftServer extends Logging {
   var uiTab: Option[ThriftServerTabSeq] = None
   var listener: HiveThriftServer2ListenerSeq = _
 
+  @DeveloperApi
   def startWithContext(ss: SequilaSession): Unit = {
-    System.setSecurityManager(null)
+    //System.setSecurityManager(null)
     val server = new HiveThriftServer2Seq(ss)
 
     val executionHive = HiveUtils.newClientForExecution(
       ss.sqlContext.sparkContext.conf,
-      ss.sqlContext.sessionState.newHadoopConf())
+      ss.sparkContext.hadoopConfiguration)
 
     server.init(executionHive.conf)
     server.start()
@@ -37,13 +41,15 @@ object SequilaThriftServer extends Logging {
   }
 
   def main(args: Array[String]): Unit = {
-    System.setSecurityManager(null)
-
+    //System.setSecurityManager(null)
     val spark = SparkSession
       .builder
-        .enableHiveSupport()
+        .config("spark.sql.hive.thriftServer.singleSession","true")
+        .config("spark.sql.warehouse.dir",sys.env.getOrElse("SEQ_METASTORE_LOCATION",System.getProperty("user.dir")) )
+      .enableHiveSupport()
        //.master("local[1]")
       .getOrCreate
+
     val ss = new SequilaSession(spark)
     UDFRegister.register(ss)
     SequilaRegister.register(ss)

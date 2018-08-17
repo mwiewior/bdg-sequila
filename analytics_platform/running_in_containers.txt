@@ -2,6 +2,7 @@
 #bdg-sequila
 docker run --rm -e USERID=$UID -e GROUPID=$(id -g) -d \
 -p 10000:10000 -p 4040:4040 -h bdg-sequila -v /Users/marek/data/bams/:/data/input/bams \
+-v /Users/marek/data/output:/data/output \
 --name bdg-sequila biodatageeks/bdg-sequila-lite bdg-start-thriftserver --master=local[4] --driver-memory=6g
 
 #superset

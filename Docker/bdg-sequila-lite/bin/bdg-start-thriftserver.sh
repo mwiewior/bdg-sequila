@@ -48,7 +48,9 @@ fi
 
 #--conf spark.sql.catalogImplementation=hive
 
-exec "${SPARK_HOME}"/bin/spark-shell -i /tmp/bdg-toolset/sequilathriftinit.scala  --conf spark.sql.warehouse.dir=/data/input/bams --jars /tmp/bdg-sequila-assembly-${BDG_VERSION}.jar
+
+export SEQ_METASTORE_LOCATION=/data/output
+#exec "${SPARK_HOME}"/bin/spark-shell -i /tmp/bdg-toolset/sequilathriftinit.scala  --conf spark.sql.warehouse.dir=/data/input/bams --jars /tmp/bdg-sequila-assembly-${BDG_VERSION}.jar
 
 exec "${SPARK_HOME}"/bin/spark-submit --class $CLASS --name "Thrift JDBC/ODBC Server"  \
 --conf spark.sql.hive.thriftServer.singleSession=true  "$@" /tmp/bdg-sequila-assembly-${BDG_VERSION}.jar
