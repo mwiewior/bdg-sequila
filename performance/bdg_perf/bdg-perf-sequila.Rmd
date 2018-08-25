@@ -34,7 +34,7 @@ res <- dbSendQuery(con, q_dist_tests)
 all_test_df<-dbFetch(res)
 dbClearResult(res)
 for(t in all_test_df$query_id){
-  query <- stringr::str_interp("SELECT cast(elapsed_time as integer) as elapsed_time,time_stamp  FROM ${bdg_table} WHERE query_id='${t}'")
+  query <- stringr::str_interp("SELECT cast(elapsed_time as integer) as elapsed_time,time_stamp  FROM ${bdg_table} WHERE query_id='${t}' ORDER BY time_stamp desc LIMIT 10")
   res <- dbSendQuery(con, query)
   df<-dbFetch(res)
   barplot(df$elapsed_time,main=t,horiz=TRUE,xlab="time[ms]",ylab="Runs",border="red",col="blue",density=10)
