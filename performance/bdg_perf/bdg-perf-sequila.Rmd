@@ -9,6 +9,11 @@ knitr::opts_chunk$set(echo = FALSE)
 library(RPostgres)
 ```
 
+```{r echo=FALSE}
+bdg_test_id <- Sys.getenv("BRANCH_NAME")
+print(stringr::str_interp("Testing for ${bdg_test_id}"))
+```
+
 ## SeQuiLa functions
 
 ```{r echo=FALSE}
