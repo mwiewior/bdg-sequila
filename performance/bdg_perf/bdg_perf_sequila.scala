@@ -27,7 +27,7 @@ OPTIONS(path '${BAM_DIR}')""")
 
 
 val queries = Array(
-  BDGQuery("bdg_seq_count_NA12878","SELECT COUNT(*) FROM reads WHERE sampleId='NA12878.ga2.exome'")
+  BDGQuery("bdg_seq_count_NA12878","SELECT COUNT(*) FROM reads WHERE sampleId='NA12878'")
 )
 
 BDGPerfRunner.run(ss,queries)
