@@ -25,7 +25,7 @@ bdg_user <- Sys.getenv("BDG_PERF_USER")
 bdg_pass <- Sys.getenv("BDG_PERF_PASS")
 bdg_table <- Sys.getenv("BDG_PERF_TABLE")
 bdg_test_id <- Sys.getenv("BRANCH_NAME")
-#bdg_test_id<-"PR-118"
+#bdg_test_id<-"PR-119"
 con <- dbConnect(Postgres(), dbname = bdg_db, host=bdg_host, port=bdg_port, user=bdg_user, password=bdg_pass)  
 dbListTables(con)
 
@@ -34,7 +34,7 @@ res <- dbSendQuery(con, q_dist_tests)
 all_test_df<-dbFetch(res)
 dbClearResult(res)
 for(t in all_test_df$query_id){
-  query <- stringr::str_interp("SELECT test_id,cast(elapsed_time as integer) as elapsed_time  FROM ${bdg_table} WHERE query_id='${t}' AND test_id<>'master' ORDER BY time_stamp desc LIMIT 5")
+  query <- stringr::str_interp("SELECT test_id,cast(elapsed_time as integer) as elapsed_time  FROM ${bdg_table} WHERE query_id='${t}' AND test_id='${bdg_test_id}' ORDER BY time_stamp desc LIMIT 5")
   res <- dbSendQuery(con, query)
   df_branch<-dbFetch(res)
   dbClearResult(res)
