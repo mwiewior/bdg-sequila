@@ -24,8 +24,8 @@ bdg_port<-strsplit(strsplit(dbString,"/")[[1]][3],":")[[1]][2]
 bdg_user <- Sys.getenv("BDG_PERF_USER")
 bdg_pass <- Sys.getenv("BDG_PERF_PASS")
 bdg_table <- Sys.getenv("BDG_PERF_TABLE")
-#bdg_test_id <- Sys.getenv("BRANCH_NAME")
-bdg_test_id<-"PR-118"
+bdg_test_id <- Sys.getenv("BRANCH_NAME")
+#bdg_test_id<-"PR-118"
 con <- dbConnect(Postgres(), dbname = bdg_db, host=bdg_host, port=bdg_port, user=bdg_user, password=bdg_pass)  
 dbListTables(con)
 
