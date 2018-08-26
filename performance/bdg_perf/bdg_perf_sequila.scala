@@ -27,7 +27,7 @@ OPTIONS(path '${BAM_DIR}')""")
 //targets
 val  bedPath="/data/granges/tgp_exome_hg18.bed"
 ss.sql(s"""
-             |CREATE TABLE targets(contigName String,start Integer,end Integer)
+             |CREATE TABLE IF NOT EXISTS targets(contigName String,start Integer,end Integer)
              |USING csv
              |OPTIONS (path "${bedPath}", delimiter "\t")""".stripMargin)
 
@@ -54,7 +54,7 @@ BDGPerfRunner.run(ss,queries)
 
 //cleanup
 ss.sql(s"""DROP TABLE IF EXISTS reads""")
-
+ss.sql(s"""DROP TABLE IF EXISTS targets""")
 System.exit(0)
 
 
