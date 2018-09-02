@@ -10,13 +10,24 @@ import org.apache.spark.broadcast.Broadcast
 import org.apache.log4j.Logger
 
 
+abstract class AbstractCovRecord {
+  def contigName: String
+  def start: Int
+  def end: Int
+  def cov: Short
+}
 
 
-case class CovRecord(contigName:String, start:Int, end:Int, cov:Short, overLap:Option[Int] = None) extends Ordered[CovRecord] {
+case class CovRecord(val contigName:String, val start:Int,val end:Int, val cov:Short)
+  extends AbstractCovRecord
+    with Ordered[CovRecord] {
 
   override def compare(that: CovRecord): Int = this.start compare that.start
 }
 
+//for various coverage windows operations
+case class CovRecordWindow(val contigName:String, val start:Int,val end:Int, val cov:Short, val overLap:Option[Int] = None)
+extends AbstractCovRecord
 
 object CoverageMethodsMos {
   val logger = Logger.getLogger(this.getClass.getCanonicalName)
@@ -160,7 +171,7 @@ object CoverageMethodsMos {
 
   def eventsToCoverage(sampleId:String, events: RDD[(String,(Array[Short],Int,Int,Int))],
                        contigMinMap: mutable.HashMap [String,(Int,Int)],
-                       blocksResult:Boolean, allPos: Boolean, windowLength: Option[Int], targetsTable:Option[String]) = {
+                       blocksResult:Boolean, allPos: Boolean, windowLength: Option[Int], targetsTable:Option[String]) : RDD[AbstractCovRecord] = {
     events
       .mapPartitions{ p => p.map(r=>{
         val contig = r._1
