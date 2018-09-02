@@ -83,20 +83,10 @@ object ResolveTableValuedFunctionsSeq extends Rule[LogicalPlan] {
     * Internal registry of table-valued functions.
     */
   private val builtinFunctions: Map[String, TVF] = Map(
-    "coverage" -> Map(
-      /* coverage(tableName) */
-      tvf("table" -> StringType) { case Seq(table: Any) =>
-        Coverage(table.toString)
-      }),
-    "coverage_hist" -> Map(
-      /* coverage_hist(tableName) */
-      tvf("table" -> StringType) { case Seq(table: Any) =>
-        CoverageHist(table.toString)
-      }),
     "bdg_coverage" -> Map(
       /* coverage(tableName) */
-      tvf("table" -> StringType, "sampleId" -> StringType, "method" -> StringType, "result" -> StringType) { case Seq(table: Any,sampleId:Any, method:Any, result:Any) =>
-        BDGCoverage(table.toString,sampleId.toString, method.toString, result.toString)
+      tvf("table" -> StringType, "sampleId" -> StringType, "result" -> StringType) { case Seq(table: Any,sampleId:Any, result:Any) =>
+        BDGCoverage(table.toString,sampleId.toString,result.toString)
       }),
 
     "range" -> Map(
@@ -237,7 +227,7 @@ case class CoverageHist(tableName:String,
 
 
 object BDGCoverage {
-  def apply(tableName:String, sampleId:String, method: String,result: String): BDGCoverage = {
+  def apply(tableName:String, sampleId:String, result: String): BDGCoverage = {
     val output = StructType(Seq(
       //StructField("sampleId", StringType, nullable = false),
       StructField("contigName",StringType,nullable = true),
@@ -246,12 +236,12 @@ object BDGCoverage {
       StructField("coverage",ShortType,nullable = false)
     )
     ).toAttributes
-    new BDGCoverage(tableName:String,sampleId.toString, method, result, output)
+    new BDGCoverage(tableName:String,sampleId.toString, result, output)
   }
 
 }
 
-case class BDGCoverage(tableName:String, sampleId:String, method:String, result: String,
+case class BDGCoverage(tableName:String, sampleId:String, result: String,
                        output: Seq[Attribute])
   extends LeafNode with MultiInstanceRelation {
 
