@@ -25,7 +25,7 @@ class CoverageStrategy(spark: SparkSession) extends Strategy with Serializable  
 
     //add support for CRAM
 
-    case BDGCoverage(tableName,sampleId,result,output) => {
+    case BDGCoverage(tableName,sampleId,result,target,output) => {
       val inputFormat = BDGTableFuncs
         .getTableMetadata(spark, tableName)
         .provider
@@ -33,9 +33,9 @@ class CoverageStrategy(spark: SparkSession) extends Strategy with Serializable  
         case Some(f) => {
 
           if (f == BDGInputDataType.BAMInputDataType)
-            BDGCoveragePlan[BAMBDGInputFormat](plan, spark, tableName, sampleId,result, output) :: Nil
+            BDGCoveragePlan[BAMBDGInputFormat](plan, spark, tableName, sampleId,result,target, output) :: Nil
           else if (f == BDGInputDataType.CRAMInputDataType)
-            BDGCoveragePlan[CRAMBDGInputFormat](plan, spark, tableName, sampleId, result, output) :: Nil
+            BDGCoveragePlan[CRAMBDGInputFormat](plan, spark, tableName, sampleId, result,target, output) :: Nil
           else Nil
         }
         case None => throw new Exception("Only BAM and CRAM file formats are supported in bdg_coverage.")
@@ -56,7 +56,8 @@ case class UpdateStruct(
 
 
 case class BDGCoveragePlan [T<:BDGAlignInputFormat](plan: LogicalPlan, spark: SparkSession,
-                                                    table:String, sampleId:String, result:String, output: Seq[Attribute])(implicit c: ClassTag[T])
+                                                    table:String, sampleId:String, result:String, target:Option[String],
+                                                    output: Seq[Attribute])(implicit c: ClassTag[T])
   extends SparkPlan with Serializable  with BDGAlignFileReaderWriter [T]{
 
 
@@ -173,8 +174,21 @@ case class BDGCoveragePlan [T<:BDGAlignInputFormat](plan: LogicalPlan, spark: Sp
     }
     val allPos = spark.sqlContext.getConf(BDGInternalParams.ShowAllPositions, "false").toBoolean
 
+    //check if it's a window length or a table name
+    val maybeWindowLength =
+      try {
+              target match {
+                case Some(t) => Some(t.toInt)
+                case _ => None
+              }
+      } catch {
+        case e: Exception => None
+    }
 
-    lazy val cov = CoverageMethodsMos.eventsToCoverage(sampleId, reducedEvents, covBroad.value.minmax, blocksResult, allPos)
+
+    lazy val cov = CoverageMethodsMos.eventsToCoverage(sampleId, reducedEvents,
+                  covBroad.value.minmax, blocksResult, allPos,maybeWindowLength,
+      if (maybeWindowLength == None) target else None)
 
     cov.mapPartitions(p => {
       val proj = UnsafeProjection.create(schema)

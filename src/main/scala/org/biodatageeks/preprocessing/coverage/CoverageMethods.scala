@@ -12,7 +12,7 @@ import org.apache.log4j.Logger
 
 
 
-case class CovRecord(contigName:String, start:Int, end:Int, cov:Short) extends Ordered[CovRecord] {
+case class CovRecord(contigName:String, start:Int, end:Int, cov:Short, overLap:Option[Int] = None) extends Ordered[CovRecord] {
 
   override def compare(that: CovRecord): Int = this.start compare that.start
 }
@@ -158,7 +158,9 @@ object CoverageMethodsMos {
   }
 
 
-  def eventsToCoverage(sampleId:String, events: RDD[(String,(Array[Short],Int,Int,Int))], contigMinMap: mutable.HashMap [String,(Int,Int)], blocksResult:Boolean, allPos: Boolean) = {
+  def eventsToCoverage(sampleId:String, events: RDD[(String,(Array[Short],Int,Int,Int))],
+                       contigMinMap: mutable.HashMap [String,(Int,Int)],
+                       blocksResult:Boolean, allPos: Boolean, windowLength: Option[Int], targetsTable:Option[String]) = {
     events
       .mapPartitions{ p => p.map(r=>{
         val contig = r._1
@@ -190,13 +192,13 @@ object CoverageMethodsMos {
         while(i < covArrayLength){
           cov += r._2._1(i)
 
-          if (!blocksResult ) {
+          if (!blocksResult && windowLength == None) {
             if (i!= covArrayLength - 1) { //HACK. otherwise we get doubled CovRecords for partition boundary index
               result(ind) = CovRecord(contig, i + posShift, i + posShift, cov.toShort)
               ind += 1
             }
           }
-          else {
+          else if(windowLength == None) {
             if (prevCov >= 0 && prevCov != cov && i > 0) { // for the first element we do not write block
               result(ind) = CovRecord(contig, i + posShift - blockLength, i + posShift - 1, prevCov.toShort)
               blockLength = 0

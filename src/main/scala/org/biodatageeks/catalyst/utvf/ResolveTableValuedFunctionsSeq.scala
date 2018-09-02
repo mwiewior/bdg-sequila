@@ -85,10 +85,15 @@ object ResolveTableValuedFunctionsSeq extends Rule[LogicalPlan] {
   private val builtinFunctions: Map[String, TVF] = Map(
     "bdg_coverage" -> Map(
       /* coverage(tableName) */
-      tvf("table" -> StringType, "sampleId" -> StringType, "result" -> StringType) { case Seq(table: Any,sampleId:Any, result:Any) =>
-        BDGCoverage(table.toString,sampleId.toString,result.toString)
+      tvf("table" -> StringType, "sampleId" -> StringType, "result" -> StringType)
+      { case Seq(table: Any,sampleId:Any, result:Any) =>
+        BDGCoverage(table.toString,sampleId.toString,result.toString, None)
+      },
+      /* coverage(tableName) */
+      tvf("table" -> StringType, "sampleId" -> StringType, "result" -> StringType, "target" -> StringType)
+      { case Seq(table: Any,sampleId:Any, result:Any, target: Any) =>
+        BDGCoverage(table.toString,sampleId.toString,result.toString, Some(target.toString))
       }),
-
     "range" -> Map(
       /* range(end) */
       tvf("end" -> LongType) { case Seq(end: Long) =>
@@ -144,90 +149,11 @@ object ResolveTableValuedFunctionsSeq extends Rule[LogicalPlan] {
   }
 }
 
-/** Factory for constructing new `Coverage` nodes. */
-object Coverage {
-  def apply(tableName:String): Coverage = {
-    val output = StructType(Seq(
-      StructField("sampleId", StringType, nullable = false),
-      StructField("contigName",StringType,nullable = true),
-      StructField("position",IntegerType,nullable = false),
-      StructField("coverage",IntegerType,nullable = false)
-      )
-      ).toAttributes
-    new Coverage(tableName:String,output)
-  }
 
-}
-
-case class Coverage(tableName:String,
-                    output: Seq[Attribute])
-  extends LeafNode with MultiInstanceRelation {
-
-
-  val numElements: BigInt = 1
-
-  def toSQL(): String = {
-
-    s"SELECT sampleId,contigName,position,coverage AS `${output.head.name}` FROM coverage('$tableName')"
-  }
-
-  override def newInstance(): Coverage = copy(output = output.map(_.newInstance()))
-
-  override def computeStats(conf: SQLConf): Statistics = {
-    val sizeInBytes = LongType.defaultSize * numElements
-    Statistics( sizeInBytes = sizeInBytes )
-  }
-
-  override def simpleString: String = {
-    s"Coverage ('$tableName')"
-  }
-}
-
-
-/*coverage_hist*/
-object CoverageHist {
-  def apply(tableName:String): CoverageHist = {
-    val output = StructType(Seq(
-      StructField("sampleId", StringType, nullable = false),
-      StructField("contigName",StringType,nullable = true),
-      StructField("position",IntegerType,nullable = false),
-      //StructField("coverage",StringType,nullable = false),
-      StructField("coverage",ArrayType(IntegerType,false),nullable = false),
-      StructField("coverageTotal",IntegerType,nullable = false)
-    )
-    ).toAttributes
-    new CoverageHist(tableName:String,output)
-  }
-
-}
-
-case class CoverageHist(tableName:String,
-                    output: Seq[Attribute])
-  extends LeafNode with MultiInstanceRelation {
-
-
-  val numElements: BigInt = 1
-
-  def toSQL(): String = {
-
-    s"SELECT sampleId,contigName,position,coverage AS `${output.head.name}` FROM coverage_hist('$tableName')"
-  }
-
-  override def newInstance(): CoverageHist = copy(output = output.map(_.newInstance()))
-
-  override def computeStats(conf: SQLConf): Statistics = {
-    val sizeInBytes = LongType.defaultSize * numElements
-    Statistics( sizeInBytes = sizeInBytes )
-  }
-
-  override def simpleString: String = {
-    s"Coverage_hist ('$tableName')"
-  }
-}
 
 
 object BDGCoverage {
-  def apply(tableName:String, sampleId:String, result: String): BDGCoverage = {
+  def apply(tableName:String, sampleId:String, result: String, target: Option[String]): BDGCoverage = {
     val output = StructType(Seq(
       //StructField("sampleId", StringType, nullable = false),
       StructField("contigName",StringType,nullable = true),
@@ -236,12 +162,12 @@ object BDGCoverage {
       StructField("coverage",ShortType,nullable = false)
     )
     ).toAttributes
-    new BDGCoverage(tableName:String,sampleId.toString, result, output)
+    new BDGCoverage(tableName:String,sampleId.toString, result, target, output)
   }
 
 }
 
-case class BDGCoverage(tableName:String, sampleId:String, result: String,
+case class BDGCoverage(tableName:String, sampleId:String, result: String, target:Option[String],
                        output: Seq[Attribute])
   extends LeafNode with MultiInstanceRelation {
 
