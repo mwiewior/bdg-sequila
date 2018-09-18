@@ -186,9 +186,23 @@ case class BDGCoveragePlan [T<:BDGAlignInputFormat](plan: LogicalPlan, spark: Sp
     }
 
 
-    lazy val cov = CoverageMethodsMos.eventsToCoverage(sampleId, reducedEvents,
-                  covBroad.value.minmax, blocksResult, allPos,maybeWindowLength,
-      if (maybeWindowLength == None) target else None)
+    lazy val cov =
+      if(maybeWindowLength != None) //fixed-length window
+        CoverageMethodsMos.eventsToCoverage(sampleId, reducedEvents, covBroad.value.minmax, blocksResult, allPos,maybeWindowLength,None)
+          .keyBy(_.key)
+          .reduceByKey((a,b) =>
+            CovRecordWindow(a.contigName,
+              a.start,
+              a.end,
+              ((a.asInstanceOf[CovRecordWindow].overLap.get * a.cov + b.asInstanceOf[CovRecordWindow].overLap.get * b.cov )/
+                (a.asInstanceOf[CovRecordWindow].overLap.get + b.asInstanceOf[CovRecordWindow].overLap.get)).toShort,
+              Some(a.asInstanceOf[CovRecordWindow].overLap.get + b.asInstanceOf[CovRecordWindow].overLap.get)))
+          .map(_._2)
+       else
+        CoverageMethodsMos.eventsToCoverage(sampleId, reducedEvents, covBroad.value.minmax, blocksResult, allPos,None, None)
+
+
+
 
     cov.mapPartitions(p => {
       val proj = UnsafeProjection.create(schema)

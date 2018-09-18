@@ -11,10 +11,21 @@ import org.apache.log4j.Logger
 
 
 abstract class AbstractCovRecord {
+  val key = this.hashCode() ///FIXME: key should only hash of contigName,start,end
   def contigName: String
   def start: Int
   def end: Int
   def cov: Short
+
+
+  override def equals(obj:Any) = {
+    if(obj.isInstanceOf[AbstractCovRecord]) {
+     val cov = obj.asInstanceOf[AbstractCovRecord]
+      if(cov.contigName == this.contigName && cov.start == this.start && cov.end == this.end) true else false
+    }
+    else false
+  }
+
 }
 
 
