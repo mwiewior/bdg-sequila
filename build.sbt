@@ -8,7 +8,7 @@ organization := "org.biodatageeks"
 
 scalaVersion := "2.11.8"
 
-val DEFAULT_SPARK_2_VERSION = "2.2.2"
+val DEFAULT_SPARK_2_VERSION = "2.3.2"
 val DEFAULT_HADOOP_VERSION = "2.6.5"
 
 
@@ -22,7 +22,7 @@ libraryDependencies +=  "org.apache.spark" % "spark-sql_2.11" % sparkVersion
 libraryDependencies +=  "org.apache.spark" %% "spark-hive" % sparkVersion
 libraryDependencies +=  "org.apache.spark" %% "spark-hive-thriftserver" % sparkVersion
 
-libraryDependencies += "com.holdenkarau" % "spark-testing-base_2.11" % "2.2.0_0.7.4" % "test" excludeAll ExclusionRule(organization = "javax.servlet") excludeAll (ExclusionRule("org.apache.hadoop"))
+libraryDependencies += "com.holdenkarau" % "spark-testing-base_2.11" % "2.3.1_0.10.0" % "test" excludeAll ExclusionRule(organization = "javax.servlet") excludeAll (ExclusionRule("org.apache.hadoop"))
 
 libraryDependencies += "org.apache.spark" %% "spark-hive"       % "2.0.0" % "test"
 
