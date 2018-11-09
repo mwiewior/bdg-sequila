@@ -27,9 +27,10 @@ UDFRegister.register(ss)
 /*inject bdg-granges strategy*/
 SequilaRegister.register(ss)
 
-ss.sql(
-  """
-    |CREATE TABLE reads
-    |USING org.biodatageeks.datasources.BAM.BAMDataSource
-    |OPTIONS(path "/data/input/bams/*.bam")
-  """.stripMargin)
+//temp removed
+//ss.sql(
+//  """
+//    |CREATE TABLE reads
+//    |USING org.biodatageeks.datasources.BAM.BAMDataSource
+//    |OPTIONS(path "/data/input/bams/*.bam")
+//  """.stripMargin)
