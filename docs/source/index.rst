@@ -112,15 +112,16 @@ Example.scala
 .. toctree::
    :numbered:
    :maxdepth: 2
-   
+
+   modules/modules
    architecture/architecture
-   integrations/integrations
-   function/function
+        integrations/integrations
+        function/function
    fileformats/fileformats
    quickstart/quickstart
    usecases/usecases
    benchmarking/benchmarking
-..   citation/citation
+   citation/citation
 
 
 

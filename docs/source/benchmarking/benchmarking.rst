@@ -227,5 +227,5 @@ We are aware that paradigm of distributed computing is currently not fully embra
 an additional effort into preparing SeQuiLa to be easily integrated into existing applications and pipelines.
 
 
-Depth calculation
+Depth of coverage
 #################

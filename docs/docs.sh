@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -x
 
 #all|latexpdf|html
 BUILD_MODE=$1

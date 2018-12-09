@@ -39,9 +39,9 @@ Let's additionally presume that we have a cluster with a Spark driver, three wor
 When interval query is performed, all dataset's :math:`s1` partitions are sent to the driver node on which interval forest is constructed (for each chromosome a separate interval tree is created).  The forest is subsequently sent back to worker nodes on which efficient interval operations based on interval trees are performed. Depending on the strategy chosen by rule-based optimizer different set of columns are stored in tree nodes
 
 
-Interval Tree
-##############
-At it's core SeQuiLa's range joins are based on IntervalTree data structure. 
+Distributed interval joins
+##########################
+At it's core SeQuiLa's range joins are based on IntervalTree data structure.
 
 An interval tree is a tree data structure to hold intervals. It is a augmented, balanced red-black tree with low endpoint as node key and additional max value of any endpoint stored in subtree. 
 Each node contains following fields: parent, left subtree, right subtree, color, low endpoint, high endpoint and max endpoint of subtree. 
@@ -63,7 +63,7 @@ Our implementation of IntervalTree is based on explanations in [CLR]_ although i
 
 
 Rule Based Optimizer
-####################
+--------------------
 
 SeQuiLa package introduces a new rule based optimizer (RBO) that chooses most efficient join strategy based on
 input data statistics computed in the runtime. The first step of the algorithm is to obtain value of `maxBroadcastSize` parameter. It can set explicitly by the end user or computed as a fraction of the Apache Spark Driver memory.
@@ -79,8 +79,10 @@ If it fits into dedicated Spark Driver's memory (controlled by maxBroadcastSize 
     Rule-based optimizer's algorithm chooses the most efficient join strategy.
 
 
+Distributed depth of coverage
+#############################
 
-
+Under construction
 
 SeQuiLa's ecosystem
 ###################
