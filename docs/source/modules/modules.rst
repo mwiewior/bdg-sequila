@@ -7,6 +7,6 @@ Modules
 
    joins/joins
    coverage/coverage
-   pileup/pileup
-   reads/reads
-   qc/qc
+   .. pileup/pileup
+   .. reads/reads
+   .. qc/qc
