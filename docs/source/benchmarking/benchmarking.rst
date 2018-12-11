@@ -246,9 +246,9 @@ Our tests have been run on a 24-node Hadoop cluster:
 ======  =============== =========   ===
 Role    Number of nodes CPU cores   RAM
 ======  =============== =========   ===
-EN              1           28      512
-NN/RM           3           28      512
-DN/NM           24          28      512
+EN              1         28/56     512
+NN/RM           3         28/56     512
+DN/NM           24        28/56     512
 ======  =============== =========   ===
 
 EN - edge node where only Application masters and Spark Drivers have been launched in case of cluster tests.
@@ -272,10 +272,10 @@ All tests have been run using the following software components:
 Software        Version
 =============   =======
 HDP             3.0.1
-Apache Hadoop   ?
-Apache Spark    ?
-Oracle JDK      ?
-Scala           ?
+Apache Hadoop   3.1.1
+Apache Spark    2.3.1
+Oracle JDK      1.8
+Scala           2.12
 samtools        1.9
 bedtools        2.27
 GATK            3.8
@@ -472,10 +472,14 @@ Apache Spark settings
 =============== ======
 Parameter       Values
 =============== ======
-driver-memory    TODO
-executor-memory  TODO
-executor-cores   TODO
-num-executors    TODO
+driver-memory    8g
+executor-memory  4g
+executor-cores   1
+num-executors    1-500
 =============== ======
 
 
+Results
+*******
+
+.. image:: coverage.*
