@@ -412,14 +412,58 @@ For calculating the coverage the following commands have been used:
     { time mos/mosdepth -t 4 prefix NA12878.proper.wgs.bam ; } 2>> wgs_time_5.txt
     { time mos/mosdepth -t 9 prefix NA12878.proper.wgs.bam ; } 2>> wgs_time_9.txt
 
+    ### SEQUILA-COV
+    # spark shell started with 1,5,10 cores
+    spark-shell  --conf "spark.sql.catalogImplementation=in-memory" --conf spark.dynamicAllocation.enabled=false  --master=yarn-client --driver-memory=4g --executor-memory=4g --num-executors=1 --packages org.biodatageeks:bdg-sequila_2.11:0.4.1-SNAPSHOT --repositories https://zsibio.ii.pw.edu.pl/nexus/repository/maven-snapshots/ -v
+
+    spark-shell  --conf "spark.sql.catalogImplementation=in-memory" --conf spark.dynamicAllocation.enabled=false  --master=yarn-client --driver-memory=4g --executor-memory=4g --num-executors=5 --packages org.biodatageeks:bdg-sequila_2.11:0.4.1-SNAPSHOT --repositories https://zsibio.ii.pw.edu.pl/nexus/repository/maven-snapshots/ -v  
+
+    spark-shell  --conf "spark.sql.catalogImplementation=in-memory" --conf spark.dynamicAllocation.enabled=false  --master=yarn-client --driver-memory=4g --executor-memory=4g --num-executors=10 --packages org.biodatageeks:bdg-sequila_2.11:0.4.1-SNAPSHOT --repositories https://zsibio.ii.pw.edu.pl/nexus/repository/maven-snapshots/ -v  
 
 .. code-block:: scala
     
-    // for SeQuiLa-cov
-    ss.sql(s"SELECT * FROM bdg_coverage('reads','NA12878', 'blocks')").write.format("parquet").save("/data/samples/NA12878/output_tmp/wes_1_9.parquet")}
+    // inside spark-shell for SeQuiLa-cov
+    import org.apache.spark.sql.SequilaSession
+    import org.biodatageeks.utils.{SequilaRegister, UDFRegister,BDGInternalParams}
+    spark.sqlContext.setConf(BDGInternalParams.InputSplitSize, "134217728")
+        val ss = SequilaSession(spark)
+    SequilaRegister.register(ss)
+    ss.sqlContext.setConf("spark.biodatageeks.bam.useGKLInflate","true")
+    ss.sqlContext.setConf("spark.biodatageeks.bam.useSparkBAM","false")
+
+    /* WES -bases-blocks*/
+    ss.sql("""
+    CREATE TABLE IF NOT EXISTS reads_exome USING org.biodatageeks.datasources.BAM.BAMDataSource OPTIONS(path '/data/samples/NA12878/WES/NA12878*.bam')""")
+    spark.time{
+    ss.sql(s"SELECT * FROM bdg_coverage('reads_exome','NA12878', 'blocks')").write.format("parquet").save("/data/samples/NA12878/output_tmp/wes_1_9.parquet")}
+
+    /* WGS -bases-blocks*/
+    import org.apache.spark.sql.SequilaSession
+    import org.biodatageeks.utils.{SequilaRegister, UDFRegister}
+    val ss = SequilaSession(spark)
+    SequilaRegister.register(ss)
+    ss.sqlContext.setConf("spark.biodatageeks.bam.useGKLInflate","true")
+    ss.sqlContext.setConf("spark.biodatageeks.bam.useSparkBAM","false")
+    /*bases-blocks*/
+    ss.sql("""
+    CREATE TABLE IF NOT EXISTS reads_genome USING org.biodatageeks.datasources.BAM.BAMDataSource OPTIONS(path '/data/samples/NA12878/NA12878*.bam')""")
+    spark.time{
+    ss.sql(s"SELECT * FROM bdg_coverage('reads_genome','NA12878', 'blocks')").write.format("parquet").save("/data/samples/NA12878/output_tmp/wgs_1_1.parquet")}
+
+    /*windows - 500*/
+    import org.apache.spark.sql.SequilaSession
+    import org.biodatageeks.utils.{SequilaRegister, UDFRegister}
+    val ss = SequilaSession(spark)
+    SequilaRegister.register(ss)
+    ss.sqlContext.setConf("spark.biodatageeks.bam.useGKLInflate","true")
+    ss.sqlContext.setConf("spark.biodatageeks.bam.useSparkBAM","false")
+    /*bases-blocks*/
+  ss.sql("""
+    CREATE TABLE IF NOT EXISTS reads_exome USING org.biodatageeks.datasources.BAM.BAMDataSource OPTIONS(path '/tmp/fp16yq/data/exome/32MB/*.bam')""")
+    spark.time{
+    ss.sql(s"SELECT * FROM bdg_coverage('reads_exome','NA12878', 'blocks', '500')").write.format("parquet").save("/tmp/fp16yq/data/32MB_w500_3.parquet") }
 
 
-Exactly the same query has been used for both single node and cluster tests.
 
 
 Apache Spark settings
