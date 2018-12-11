@@ -182,15 +182,15 @@ SeQuiLa-cov computation model supports fine-grained parallelism at user-defined 
     Implementation of distributed event-based algorithm in Apache Spark framework.
 
 
-Usage patterns
-###############
+.. Usage patterns
+.. ###############
 
-SeQuiLa can be used in different ways. Specifically, it supports ad-hoc research, which is typically focused on quick analysis on data stored in files. Depending on your preferences, you can use predefined scripts (findOverlaps and featureCounts) or write your own code snippets within spark-shell or our bdg-shell. Additionally SeQuiLa also can be used along with your existing applications written in Scala/Spark, R or any other language/platform.
+.. SeQuiLa can be used in different ways. Specifically, it supports ad-hoc research, which is typically focused on quick analysis on data stored in files. Depending on your preferences, you can use predefined scripts (findOverlaps and featureCounts) or write your own code snippets within spark-shell or our bdg-shell. Additionally SeQuiLa also can be used along with your existing applications written in Scala/Spark, R or any other language/platform.
 
 
-.. figure:: usage_all.*
-    :scale: 100
+.. .. figure:: usage_all.*
+..     :scale: 100
 
-    SeQuiLa supports both file-oriented and data-oriented approach for analysis. Custom analysis can be written in SQL, R or Scala.
+..     SeQuiLa supports both file-oriented and data-oriented approach for analysis. Custom analysis can be written in SQL, R or Scala.
 
 
