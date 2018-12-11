@@ -128,10 +128,58 @@ Firstly, we provide a tabular view on the input data, through custom SQL-like da
 Algorithm
 -----------
 
+SeQuiLa-cov implements distributed event-based algorithm for coverage calculations. Event-based approach has better computational complexity than traditionally used pileup-based methods since it tracks only selected events of alignment blocks instead of analyzing each base of each alignment block. 
+
+The event-based algorithm allocates ``events`` vector for each contig and subsequently iterates through the set of reads parsing it's CIGAR string to determine continuous alignment blocks. For each block the value in the ``events`` vector in the position corresponding to block start is being incremented and the value in the position corresponding to block end is being decremented.  The depth of coverage for a specific locus is calculated using the cumulative sum of all elements in the ``events`` vector preceding specified position. 
+
+The algorithm may produce three typically used coverage types:  `per-base` coverage, which includes the coverage value for each genomic position separately, `blocks` which lists adjacent positions with equal coverage values are merged into single interval, and `fixed-length windows` coverage that generates set of equal-size, non-overlapping and tiling genomic ranges and outputs arithmetic mean of base coverage values for each region.
 
 
-Optimizations
---------------------
+.. figure:: events.*
+    :scale: 90
+
+    
+    Event-based approach and three coverage result types.
+
+
+
+In the most general case, the algorithm can be used in a distributed environment. Let's consider input data set, ``read_set``, of aligned sequencing reads sorted by genomic position from a BAM file partitioned into the `n` data slices (``read_set_1``, ``read__set_2``, ..., ``read_set_n``).
+
+In this setting each cluster node computes the coverage for the subset of data slices using the event-based method. For the i-th partition containing the set of reads (``read_set_i``), the set of  ``events_i`` vectors for each chromosome is allocated and updated, based on the items from ``read_set_i``. After performing the CIGAR analysis and appropriate updates on the ``events`` vectors, the cumulative sum is realized and stored in ``partial_coverage`` vectors for each chromosome.
+
+Note that the set of ``partial_coverage_i`` vectors is distributed among the computation nodes. To calculate the final coverage for the input data set, an additional step of correction for overlaps between the partitions is required. 
+
+An overlap of length `l` between vectors adjacent ``partial_coverage`` vectors may occur when `l` tailing genomic positions of preceding vector are the same as `l` heading genomic positions of consecutive vector.
+
+If an overlap is identified then the coverage values from the preceding ``partial_coverage`` ``l``-length tail are added into the consecutive ``partial_coverage`` head and subsequently the last ``l`` elements of first ``partial_coverage`` are removed. Once this correction step is completed, non-overlapping set of ``coverage`` vectors are collected and yield the final coverage values for the whole input ``read_set``. 
+
+
+
+.. figure:: coverage_algorithm.*
+    :scale: 90
+
+    Distributed event-based algorithm.
+
+
+
+Implementation and optimizations
+----------------------------------
+
+The main characteristic of the described above algorithm is its ability to distribute data and calculations (such as BAM decompression and main coverage procedure) among the available computation nodes. Moreover, instead of simply performing full data reduction stage of the partial coverage vectors, our solution minimizes required data shuffling  among cluster nodes by limiting it to the overlapping part of coverage vectors.
+
+To efficiently access the data from a BAM file we have prepared a custom data source using Data Source API exposed by SparkSQL. Performance of the read operation benefits from the Intel Genomics Kernel Library  (`GKL <https://github.com/Intel-HLS/GKL>`_) used for decompressing the BAM files chunks and from predicate push-down mechanism that filters out data at the earliest stage.  
+
+The implementation of the core coverage calculation algorithm aimed at minimizing, whenever possible memory footprint by using parsimonious data types, e.g. ``Short`` type instead of ``Integer``, and efficient memory allocation strategy for large data structures, e.g. favoring static ``Arrays`` over dynamic size ``ArrayBuffers``. 
+
+Additionally, to reduce the overhead of data shuffling between the worker nodes in the correction for the overlaps stage we used Spark's shared variables accumulators and broadcast variables. Accumulator is used to gather information about the worker nodes' coverage vector ranges and coverage vector tail values, that are subsequently read and processed by the driver. This information is then used to construct a broadcast variable distributed to the worker nodes in order to perform adequate trimming and summing operations on partial coverage vectors.
+
+SeQuiLa-cov computation model supports fine-grained parallelism at user-defined partition size in contrary to the traditional, coarse-grained parallelization strategies that involve splitting input data at a contig level. 
+
+
+.. figure:: coverage_implementation.*
+    :scale: 90
+
+    Implementation of distributed event-based algorithm in Apache Spark framework.
 
 
 Usage patterns
