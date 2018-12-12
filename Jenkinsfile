@@ -116,7 +116,7 @@ node {
 
                         echo "branch: ${env.BRANCH_NAME}"
                         echo 'Publishing to ZSI-BIO snapshots repository....'
-                      //  sh "SBT_OPTS='-XX:+CMSClassUnloadingEnabled -XX:MaxPermSize=2G -Xmx2G' ${tool name: 'sbt-0.13.15', type: 'org.jvnet.hudson.plugins.SbtPluginBuilder$SbtInstallation'}/bin/sbt clean publish"
+                        sh "SBT_OPTS='-XX:+CMSClassUnloadingEnabled -XX:MaxPermSize=2G -Xmx2G' ${tool name: 'sbt-0.13.15', type: 'org.jvnet.hudson.plugins.SbtPluginBuilder$SbtInstallation'}/bin/sbt clean publish"
 
 
             }
@@ -138,16 +138,16 @@ node {
            stage('Building Docker images') {
 
                      echo 'Building Docker images....'
-                    // sh './build.sh'
+                     sh './build.sh'
 
                      }
 
-          // stage('Performance testing') {
-          //      sh "scp target/scala-2.11/bdg-sequila-assembly-*.jar cdh00:/tmp"
-          //      sh "scp performance/bdg_perf/bdg_perf_sequila.scala cdh00:/tmp"
-          //      sh "ssh cdh00 '. ~/.profile; spark-shell --master=yarn-client --executor-memory=4g --num-executors=40 --executor-cores=1 --driver-memory=8g -i /tmp/bdg_perf_sequila.scala --packages org.postgresql:postgresql:42.1.1 --conf spark.biodatageeks.perf.testId=$BRANCH_NAME --jars /tmp/bdg-sequila-assembly-*.jar -v'"
-          //      sh './build_perf_report.sh'
-          //       }
+           stage('Performance testing') {
+                sh "scp target/scala-2.11/bdg-sequila-assembly-*.jar cdh00:/tmp"
+                sh "scp performance/bdg_perf/bdg_perf_sequila.scala cdh00:/tmp"
+                sh "ssh cdh00 '. ~/.profile; spark-shell --master=yarn-client --executor-memory=4g --num-executors=40 --executor-cores=1 --driver-memory=8g -i /tmp/bdg_perf_sequila.scala --packages org.postgresql:postgresql:42.1.1 --conf spark.biodatageeks.perf.testId=$BRANCH_NAME --jars /tmp/bdg-sequila-assembly-*.jar -v'"
+                sh './build_perf_report.sh'
+                 }
 
 
 
