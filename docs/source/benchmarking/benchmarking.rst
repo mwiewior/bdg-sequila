@@ -268,9 +268,9 @@ Software
 
 All tests have been run using the following software components:
 
-=============   =======
-Software        Version
-=============   =======
+=============   ======= ========================
+Software        Version Notes
+=============   ======= ========================
 HDP             3.0.1
 Apache Hadoop   3.1.1
 Apache Spark    2.3.1
@@ -281,7 +281,8 @@ bedtools        2.27
 GATK            3.8
 sambamba        0.6.8
 mosdepth        0.2.3
-=============   =======
+mosdepth        0.2.4   using --fast-mode option
+=============   ======= ========================
 
 
 Datasets
@@ -289,14 +290,23 @@ Datasets
 Two NGS datasets have been used in all the tests.
 WES (whole exome sequencing) and WGS (whole genome sequencing) datasets have been used for vertical and horizontal scalability
 evaluation respectively. Both of them came from sequencing of NA12878 sample that is widely used in many benchmarks.
+
+In order to remove malformed reads (especially to remove CIGAR and Sequence length inconsistencies) we have processed original BAM files with GATK's tool PrintReads.
+
+.. code-block:: bash
+
+  # also set compression to BAM default level (5) -Dsamjdk.compression_level=5
+  gatk --java-options "-Dsamjdk.compression_level=5" PrintReads -I /data/NA12878.hiseq.wgs.bwa.recal.bam -O /data/proper.NA12878.bam
+
+
 The table below presents basic datasets information:
 
-=========   ======  =========    ==========
-Test name   Format  Size [GB]    Row count
-=========   ======  =========    ==========
-WES          BAM     17          161544693
-WGS          BAM     273         2617420313
-=========   ======  =========    ==========
+=========   ======  =========    ========== ========================================================================================== =====================
+Data        Format  Size [GB]    Row count   test data URL                                                                              original source 
+=========   ======  =========    ========== ========================================================================================== =====================
+WES          BAM     17          161544693  `WES BAM <http://biodatageeks.org/sequila/data/WES/NA12878.proper.wes.bam>`_                `original WES BAM <ftp://ftp-trace.ncbi.nih.gov/1000genomes/ftp/technical/working/20101201_cg_NA12878/NA12878.ga2.exome.maq.recal.bam>`_
+WGS          BAM     273         2617420313 `WGS BAM <http://biodatageeks.org/sequila/data/WGS/NA12878.proper.wgs.bam>`_                `original WGS BAM <ftp://ftp-trace.ncbi.nih.gov/1000genomes/ftp/technical/working/20101201_cg_NA12878/NA12878.hiseq.wgs.bwa.recal.bam>`_
+=========   ======  =========    ========== ========================================================================================== =====================
 
 WES - tests performed on a single node using WES dataset
 
@@ -345,39 +355,33 @@ For calculating the coverage the following commands have been used:
 
 .. code-block:: bash
 
-    ### SAMTOOLS
+    ### SAMTOOLS 1.9
     #exome - bases 1 core
-    { time samtools depth NA12878.ga2.exome.maq.recal.bam > samtools/NA12878.ga2.exome.maq.recal.depth ; } 2>> samtools/wes_time.txt
+    { time samtools depth NA12878.proper.wes.bam > samtools/NA12878.proper.wes.bamdepth ; } 2>> samtools/wes_time.txt
     # genome - bases 1 core
-    { time samtools depth NA12878.hiseq.wgs.bwa.recal.bam > samtools/NA12878.hiseq.wgs.bwa.recal.depth ; } 2>> samtools/wgs_time.txt
+    { time samtools depth NA12878.proper.wgs.bam > samtools/NA12878.proper.wgs.bam.depth ; } 2>> samtools/wgs_time.txt
+
+.. code-block:: bash
 
     ### BEDTOOLS
     # exome blocks 1 core
     time docker run --rm -v /data/samples/NA12878:/data/samples/NA12878 -w /data/samples/NA12878 biocontainers/bedtools:v2.27.0_cv2 bedtools genomecov -ibam /data/samples/NA12878/WES/NA12878.proper.wes.bam -bga > /data/samples/NA12878/bedtools_genomecov_block_coverage_wes.txt
-
     # genome blocks 1 core
     time docker run --rm -v /data/samples/NA12878:/data/samples/NA12878 -w /data/samples/NA12878 biocontainers/bedtools:v2.27.0_cv2 bedtools genomecov -ibam /data/samples/NA12878/WGS/NA12878.proper.wgs.bam -bga > /data/samples/NA12878/bedtools_genomecov_block_coverage_wgs.txt
 
-    ### GATK
-    #  exome 1 core
-    { time docker run -it  -v /data/samples/NA12878/WES:/data/ -v /data/samples/hg_builds/:/ref/ broadinstitute/gatk3:3.8-1 \
-        java -jar GenomeAnalysisTK.jar \
-    -T DepthOfCoverage \
-    -R /ref/Homo_sapiens_assembly18.fasta \
-    -o /data/gatk_doc_test.txt \
-    -I /data/NA12878.proper.wes.bam \
-    -omitIntervals \
-    -nt 1} 2>> gatk_wes_time_1.txt
+.. code-block:: bash
 
+    ### GATK
+    #  exome 1,5,10 cores
+    { time docker run -it  -v /data/samples/NA12878/WES:/data/ -v /data/samples/hg_builds/:/ref/ broadinstitute/gatk3:3.8-1  java -jar GenomeAnalysisTK.jar -T DepthOfCoverage -R /ref/Homo_sapiens_assembly18.fasta -o /data/gatk_doc_test.txt -I /data/NA12878.proper.wes.bam  -omitIntervals -nt 1} 2>> gatk_wes_time_1.txt
+    { time docker run -it  -v /data/samples/NA12878/WES:/data/ -v /data/samples/hg_builds/:/ref/ broadinstitute/gatk3:3.8-1  java -jar GenomeAnalysisTK.jar -T DepthOfCoverage -R /ref/Homo_sapiens_assembly18.fasta -o /data/gatk_doc_test.txt -I /data/NA12878.proper.wes.bam  -omitIntervals -nt 5} 2>> gatk_wes_time_5.txt
+    { time docker run -it  -v /data/samples/NA12878/WES:/data/ -v /data/samples/hg_builds/:/ref/ broadinstitute/gatk3:3.8-1  java -jar GenomeAnalysisTK.jar -T DepthOfCoverage -R /ref/Homo_sapiens_assembly18.fasta -o /data/gatk_doc_test.txt -I /data/NA12878.proper.wes.bam  -omitIntervals -nt 10} 2>> gatk_wes_time_10.txt
     # genome 1 core
-    { time docker run -it  -v /data/samples/NA12878/WGS:/data/ -v /data/samples/hg_builds/:/ref/ broadinstitute/gatk3:3.8-1 \
-        java -jar GenomeAnalysisTK.jar \
-    -T DepthOfCoverage \
-    -R /ref/Homo_sapiens_assembly18.fasta \
-    -o /data/gatk_doc_test.txt \
-    -I /data/NA12878.proper.wgs.bam \
-    -omitIntervals \
-    -nt 1} 2>> gatk_wgs_time_1.txt
+    { time docker run -it  -v /data/samples/NA12878/WGS:/data/ -v /data/samples/hg_builds/:/ref/ broadinstitute/gatk3:3.8-1 java -jar GenomeAnalysisTK.jar -T DepthOfCoverage -R /ref/Homo_sapiens_assembly18.fasta -o /data/gatk_doc_test.txt -I /data/NA12878.proper.wgs.bam -omitIntervals -nt 1} 2>> gatk_wgs_time_1.txt
+    { time docker run -it  -v /data/samples/NA12878/WGS:/data/ -v /data/samples/hg_builds/:/ref/ broadinstitute/gatk3:3.8-1 java -jar GenomeAnalysisTK.jar -T DepthOfCoverage -R /ref/Homo_sapiens_assembly18.fasta -o /data/gatk_doc_test.txt -I /data/NA12878.proper.wgs.bam -omitIntervals -nt 5} 2>> gatk_wgs_time_5.txt
+    { time docker run -it  -v /data/samples/NA12878/WGS:/data/ -v /data/samples/hg_builds/:/ref/ broadinstitute/gatk3:3.8-1 java -jar GenomeAnalysisTK.jar -T DepthOfCoverage -R /ref/Homo_sapiens_assembly18.fasta -o /data/gatk_doc_test.txt -I /data/NA12878.proper.wgs.bam -omitIntervals -nt 10} 2>> gatk_wgs_time_10.txt
+
+.. code-block:: bash
 
     ### SAMBAMBA
     # exome - blocks 1,5,10 cores
@@ -400,24 +404,38 @@ For calculating the coverage the following commands have been used:
     time docker run --rm -v /data/samples/NA12878:/data/samples/NA12878 -w /data/samples/NA12878 wkusmirek/sambamba /opt/sambamba-0.6.8-linux-static depth window --output-file=sambamba_window_coverage.txt --nthreads=5 --window-size=500 /data/samples/NA12878/WGS/NA12878.proper.wgs.bam
     time docker run --rm -v /data/samples/NA12878:/data/samples/NA12878 -w /data/samples/NA12878 wkusmirek/sambamba /opt/sambamba-0.6.8-linux-static depth window --output-file=sambamba_window_coverage.txt --nthreads=10 --window-size=500 /data/samples/NA12878/WGS/NA12878.proper.wgs.bam
 
+.. code-block:: bash
 
-    ### MOSDEPTH 
+    ### MOSDEPTH v 0.2.3
     # exome blocks 1,5,10 cores
     { time mos/mosdepth prefix NA12878.proper.wes.bam ; } 2>> mos_wes_time_1.txt
     { time mos/mosdepth -t 4 prefix NA12878.proper.wes.bam ; } 2>> mos_wes_time_5.txt
     { time mos/mosdepth -t 9 prefix NA12878.proper.wes.bam ; } 2>> mos_wes_time_10.txt
 
     # genome blocks 1,5,10 cores
-    { time mos/mosdepthh prefix NA12878.proper.wgs.bam ; } 2>> wgs_time_1.txt
+    { time mos/mosdepth prefix NA12878.proper.wgs.bam ; } 2>> wgs_time_1.txt
     { time mos/mosdepth -t 4 prefix NA12878.proper.wgs.bam ; } 2>> wgs_time_5.txt
     { time mos/mosdepth -t 9 prefix NA12878.proper.wgs.bam ; } 2>> wgs_time_9.txt
+
+.. code-block:: bash
+
+    ### MOSDEPTH v 0.2.4 fast
+    # exome blocks 1,5,10 cores
+    { time mos/mosdepth --fast-mode prefix NA12878.proper.wes.bam ; } 2>> mos_wes_time_1.txt
+    { time mos/mosdepth --fast-mode -t 4 prefix NA12878.proper.wes.bam ; } 2>> mos_wes_time_5.txt
+    { time mos/mosdepth --fast-mode -t 9 prefix NA12878.proper.wes.bam ; } 2>> mos_wes_time_10.txt
+
+    # genome blocks 1,5,10 cores
+    { time mos/mosdepth --fast-mode prefix NA12878.proper.wgs.bam ; } 2>> wgs_time_1.txt
+    { time mos/mosdepth --fast-mode -t 4 prefix NA12878.proper.wgs.bam ; } 2>> wgs_time_5.txt
+    { time mos/mosdepth --fast-mode -t 9 prefix NA12878.proper.wgs.bam ; } 2>> wgs_time_9.txt
+
+.. code-block:: bash
 
     ### SEQUILA-COV
     # spark shell started with 1,5,10 cores
     spark-shell  --conf "spark.sql.catalogImplementation=in-memory" --conf spark.dynamicAllocation.enabled=false  --master=yarn-client --driver-memory=4g --executor-memory=4g --num-executors=1 --packages org.biodatageeks:bdg-sequila_2.11:0.4.1-SNAPSHOT --repositories https://zsibio.ii.pw.edu.pl/nexus/repository/maven-snapshots/ -v
-
     spark-shell  --conf "spark.sql.catalogImplementation=in-memory" --conf spark.dynamicAllocation.enabled=false  --master=yarn-client --driver-memory=4g --executor-memory=4g --num-executors=5 --packages org.biodatageeks:bdg-sequila_2.11:0.4.1-SNAPSHOT --repositories https://zsibio.ii.pw.edu.pl/nexus/repository/maven-snapshots/ -v  
-
     spark-shell  --conf "spark.sql.catalogImplementation=in-memory" --conf spark.dynamicAllocation.enabled=false  --master=yarn-client --driver-memory=4g --executor-memory=4g --num-executors=10 --packages org.biodatageeks:bdg-sequila_2.11:0.4.1-SNAPSHOT --repositories https://zsibio.ii.pw.edu.pl/nexus/repository/maven-snapshots/ -v  
 
 .. code-block:: scala
@@ -482,4 +500,49 @@ num-executors    1-500
 Results
 *******
 
+Detailed results are shown in the table below:
+
+
++--------+------------------+---------+------------+------------+--------------+------------+--------------+-----------------+----------------+ 
+|data    | operation type   | cores   | samtools   | bedtools   |     GATK     | sambamba   | mosdepth     |  mosdepth fast  |  SeQuiLa-cov   |
++========+==================+=========+============+============+==============+============+==============+=================+================+ 
+| WGS    | blocks           | 1       | 2h 14m 58s |10h 41m 27s |    128w *    | 2h 44m 0s  |**1h 46m 27s**|                 |   1h 47m 5s    |
++        +                  +---------+------------+------------+--------------+------------+--------------+-----------------+----------------+ 
+|        |                  | 5       |            |            |2d 23h 18m *  | 2h 47m 53s |  36m 13s     |                 |   **26m 59s**  |
++        +                  +---------+------------+------------+--------------+------------+--------------+-----------------+----------------+ 
+|        |                  | 10      |            |            |2d 17h 6m *   | 2h 50m 47s |  34m 34s     |                 |  **13m 54s**   |
++        +------------------+---------+------------+------------+--------------+------------+--------------+-----------------+----------------+ 
+|        | windows          | 1       |            |            |              | 1h 46m 50s |**1h 22m 49s**|                 | 1h 24m 8s      |
++        +                  +---------+------------+------------+--------------+------------+--------------+-----------------+----------------+ 
+|        |                  | 5       |            |            |              | 1h 41m 23s |  20m 3s      |                 | **18m 43s**    |
++        +                  +---------+------------+------------+--------------+------------+--------------+-----------------+----------------+ 
+|        |                  | 10      |            |            |              | 1h 50m 35s |  17m 49s     |                 |   **9m 14s**   |
++--------+------------------+---------+------------+------------+--------------+------------+--------------+-----------------+----------------+ 
+| WES    | blocks           | 1       | 12m 26s    |  23m 25s   |   1d 5h 6m   | 25m 42s    |  6m 43s      |     **6m 12s**  |    6m 54s      |   
++        +                  +---------+------------+------------+--------------+------------+--------------+-----------------+----------------+
+|        |                  | 5       |            |            |   3d 0h 24m  | 25m 46s    |  2m 25s      |      2m 21s     |    **1m 47s**  |
++        +                  +---------+------------+------------+--------------+------------+--------------+-----------------+----------------+ 
+|        |                  | 10      |            |            |  2d 22h 30m  | 25m 49s    |  2m 20s      |                 |    **1m 4s**   |
++        +------------------+---------+------------+------------+--------------+------------+--------------+-----------------+----------------+ 
+|        | windows          | 1       |            |            |              | 14m 36s    |  **6m 11s**  |                 |    6m 29s      |
++        +                  +---------+------------+------------+--------------+------------+--------------+-----------------+----------------+ 
+|        |                  | 5       |            |            |              | 14m 54s    |  2m 8s       |                 |   **1m 42s**   |
++        +                  +---------+------------+------------+--------------+------------+--------------+-----------------+----------------+ 
+|        |                  | 10      |            |            |              |  14m 40s   |   2m 14s     |                 |   **1m 1s**    |
++--------+------------------+---------+------------+------------+--------------+------------+--------------+-----------------+----------------+ 
+
+(*) estimated time
+
+On the image below you can find performance and scalability comparison of samtools, mosdepth and SeQuiLa-cov.
+
 .. image:: coverage.*
+
+Discussion
+-----------
+Both samtools and bedtools calculate coverage  using only a single thread, however, their results differ significantly, with samtools being around twice as fast. Sambamba positions itself as a multithreaded solution although our tests revealed that its execution time is nearly constant, regardless of the number of CPU cores used, and even twice as slow as samtools. 
+
+Mosdepth achieved speedup against samtools in blocks coverage and against sambamba in windows coverage calculations, however, its scalability reaches limit at 5 CPU cores. 
+
+Finally, SeQuiLa-cov, achieves nearly identical performance as mosdepth for the single core but the execution time decreases substantially for greater number of available computing resources what makes this solution the fastest when run on multiple cores and nodes.
+
+Our results show that when utilizing additional resources (i.e.  more than 10 CPU cores), SeQuiLa-cov is able to reduce the total computation time to 15 seconds for WES and less than one minute for WGS data. Scalability limit is achieved for  200 and ~500 CPU cores in case of WES and WGS data, respectively. 
