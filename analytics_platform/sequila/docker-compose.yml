@@ -17,6 +17,8 @@ services:
     depends_on:
       - bdg-hive-metastore
     image: biodatageeks/bdg-sequila:${D_SEQUILA_VERSION}
+    volumes:
+      - /Users/marek/data/bams/:${D_DATA}
     command: bdg-start-thriftserver --master=${D_SEQUILA_MASTER} --driver-memory=${D_SEQUILA_DRIVER_MEM} --conf  spark.hadoop.hive.metastore.uris=thrift://bdg-hive-metastore:9083 -v
 
 #    bdg-superset:
