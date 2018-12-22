@@ -1,0 +1,23 @@
+version: '3'
+services:
+  hive-metastore:
+    ports:
+      - 9083:9083
+    image: timveil/docker-hadoop-hive-metastore:1.2.x
+
+  sequila:
+    links:
+      - hive-metastore
+    environment:
+      - "USERID=${D_UID}"
+      - "GROUPID=${D_GID}"
+    ports:
+      -  10000:10000
+      - 4040:4040
+    depends_on:
+      - hive-metastore
+    image: biodatageeks/bdg-sequila:0.5.2
+    command: bdg-start-thriftserver --master=local[1] --driver-memory=2g --conf  spark.hadoop.hive.metastore.uris=thrift://hive-metastore:9083 -v
+
+
+
