@@ -1,4 +1,28 @@
-#!/bin/bash
-D_UID=${UID} D_GID=$(id -g) D_SUPERSET_VERSION=$4 D_SEQUILA_VERSION=$(grep version ../../build.sbt | cut -f2 -d'=' | sed 's/ //g' | sed 's/"//g') D_METASTORE_VERSION=1.2.x D_SEQUILA_MASTER=$1 D_SEQUILA_DRIVER_MEM=$2 D_DATA=$3 docker-compose up -d
+#!/bin/bash./
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --master=*)
+      D_SEQUILA_MASTER="${1#*=}"
+      ;;
+    --driver-memory=*)
+      D_SEQUILA_DRIVER_MEM="${1#*=}"
+      ;;
+    --data-dir=*)
+      D_DATA="${1#*=}"
+      ;;
+    --superset-version=*)
+      D_SUPERSET_VERSION="${1#*=}"
+      ;;
+    *)
+      printf "***************************\n"
+      printf "* Error: Invalid argument.*\n"
+      printf "***************************\n"
+      printf "e.g. ./start.sh --master=local[2] --driver-memory=2g --data-dir=/data/input/bams --superset-version=0.28.1"
+      exit 1
+  esac
+  shift
+done
+
+D_UID=${UID} D_GID=$(id -g) D_SUPERSET_VERSION=${D_SUPERSET_VERSION} D_SEQUILA_VERSION=$(grep version ../../build.sbt | cut -f2 -d'=' | sed 's/ //g' | sed 's/"//g') D_METASTORE_VERSION=1.2.x D_SEQUILA_MASTER=${D_SEQUILA_MASTER} D_SEQUILA_DRIVER_MEM=${D_SEQUILA_DRIVER_MEM} D_DATA=${D_DATA} docker-compose up -d
 sleep 5
 docker exec -it sequila_bdg-superset_1  superset-init
