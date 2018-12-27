@@ -7,7 +7,7 @@ RUN apt-get update && apt-get install --yes git sudo curl
 RUN useradd -u 99999 -m tempuser
 
 ###SeQuiLaThrift fixes
-RUN  mkdir -p /user/hive && chmod 777 -R  /user/hive
+#RUN  mkdir -p /user/hive && chmod 777 -R  /user/hive
 
 
 # Spark related variables.
