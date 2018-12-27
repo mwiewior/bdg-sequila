@@ -23,7 +23,7 @@ while [ $# -gt 0 ]; do
       printf "***************************\n"
       printf "* Error: Invalid argument.*\n"
       printf "***************************\n"
-      printf "e.g. ./start.sh --master=local[2] --driver-memory=2g --data-dir=/Users/marek/data/bams  --sequila-version=0.5.2 --superset-version=0.28.1"
+      printf "e.g. ./start.sh --master=local[2] --driver-memory=2g --data-dir=/Users/marek/data/bams --warehouse-dir=/Users/marek/data/warehouse --sequila-version=0.5.2 --superset-version=0.28.1"
       exit 1
   esac
   shift
