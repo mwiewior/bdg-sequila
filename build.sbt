@@ -2,7 +2,7 @@ import scala.util.Properties
 
 name := """bdg-sequila"""
 
-
+version := "0.5.3-spark-2.4.0-SNAPSHOT"
 
 organization := "org.biodatageeks"
 
@@ -16,7 +16,7 @@ lazy val sparkVersion = Properties.envOrElse("SPARK_VERSION", DEFAULT_SPARK_2_VE
 lazy val hadoopVersion = Properties.envOrElse("SPARK_HADOOP_VERSION", DEFAULT_HADOOP_VERSION)
 
 
-version := s"0.5.3-spark-${sparkVersion}-SNAPSHOT"
+
 
 dependencyOverrides += "com.google.guava" % "guava" % "15.0"
 libraryDependencies += "org.apache.hadoop" % "hadoop-client" % hadoopVersion
