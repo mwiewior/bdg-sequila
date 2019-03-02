@@ -6,20 +6,21 @@
 SeQuiLa User Guide 
 ====================
 
-SeQuiLa is an ANSI-SQL compliant solution for efficient genomic intervals querying and processing built on top of `Apache Spark`_. Range joins are bread and butter for NGS analysis but the high volume of data make them execute very slowly or even failing to compute.
+SeQuiLa is an ANSI-SQL compliant solution for efficient genomic intervals querying and processing built on top of `Apache Spark`_. Range joins and depth of coverage computations are bread and butter for NGS analysis but the high volume of data make them execute very slowly or even failing to compute.
+
 
 .. _Apache Spark: https://spark.apache.org/ 
 
 * SeQuiLa is fast:
 
-   - genome-wide analyses in several minutes
+   - genome-wide analyses in less than a minute (for depth of coverage calculations) and several minutes (for range joins)
    - 22x+ speedup over Spark default join operation
    - up to 100x+ speedup for interval queries for BAM datasource using indexes (>= 0.4.1)
-   - 100% accuracy in functional tests against GRanges
+   - 100% accuracy in functional tests against GRanges and samtools
 
 * SeQuiLa is elastic:
 
-   - growing catalogue of utility functions and operations including: `featureCounts`, `countOverlaps` and `coverage`
+   - growing catalogue of utility functions and operations including: `featureCounts`, `countOverlaps` and `bdg_coverage`
    - standard SQL DML/DDL like SPJG (select, predicate, join, group by), CTaS (create table as select), IaS (insert table as select) for easy BAM files manipulation
    - exposed parameters for further performance tuning
    - integration with third-party tools through SparkSQL Thrift JDBC driver
@@ -35,11 +36,11 @@ SeQuiLa is an ANSI-SQL compliant solution for efficient genomic intervals queryi
    - can be run on single computer (locally) or Hadoop cluster using YARN
 
 
-.. rubric:: Main components:
+.. .. rubric:: Main components:
 
 
-.. figure:: architecture/components.*
-    :scale: 100
+.. .. figure:: architecture/components.*
+..     :scale: 100
 
 .. rubric:: Availability:
 
@@ -85,6 +86,11 @@ Example.scala
 
 .. rubric:: Release notes:
 
+0.5
+
+ - new result type (fixed lenght windows) for depth of coverage calculations
+
+
 0.4.1
 
  - a new highly-optimized  `mosdepth <https://github.com/brentp/mosdepth>`_ distributed implementation for depth of coverage calculations
@@ -107,15 +113,17 @@ Example.scala
 .. toctree::
    :numbered:
    :maxdepth: 2
-   
+
+   modules/modules
    architecture/architecture
-   integrations/integrations
-   function/function
+        integrations/integrations
+        function/function
    fileformats/fileformats
    quickstart/quickstart
    usecases/usecases
+   development/development
    benchmarking/benchmarking
-..   citation/citation
+   citation/citation
 
 
 
