@@ -143,7 +143,7 @@ node {
                      }
 
            stage('Performance testing') {
-                sh "${tool name: 'sbt-0.13.15', type: 'org.jvnet.hudson.plugins.SbtPluginBuilder$SbtInstallation'}/bin/sbt -J-Xms2048m -J-Xmx2048m 'set test in assembly := {}' clean assembly"
+                sh "${tool name: 'sbt-0.13.15', type: 'org.jvnet.hudson.plugins.SbtPluginBuilder$SbtInstallation'}/bin/sbt -J-Xms2048m -J-Xmx2048m 'set test in assembly := {}' assembly"
                 sh "ssh bdg-perf@cdh00 rm -rf /tmp/bdg-sequila-assembly-*.jar"
                 sh "scp target/scala-2.11/bdg-sequila-assembly-*.jar bdg-perf@cdh00:/tmp"
                 sh "scp performance/bdg_perf/bdg_perf_sequila.scala bdg-perf@cdh00:/tmp"
