@@ -143,10 +143,11 @@ node {
                      }
 
            stage('Performance testing') {
-                sh "${tool name: 'sbt-0.13.15', type: 'org.jvnet.hudson.plugins.SbtPluginBuilder$SbtInstallation'}/bin/sbt assembly"
+                sh "${tool name: 'sbt-0.13.15', type: 'org.jvnet.hudson.plugins.SbtPluginBuilder$SbtInstallation'}/bin/sbt 'set test in assembly := {}' clean assembly"
+                sh "ssh bdg-perf@cdh00 rm -rf /tmp/bdg-sequila-assembly-*.jar"
                 sh "scp target/scala-2.11/bdg-sequila-assembly-*.jar bdg-perf@cdh00:/tmp"
                 sh "scp performance/bdg_perf/bdg_perf_sequila.scala bdg-perf@cdh00:/tmp"
-                sh "ssh bdg-perf@cdh00 '. ~/.profile; spark-shell  --principal $LOGNAME@CL.II.PW.EDU.PL --keytab $HOME/keytabs/$LOGNAME.keytab --master=yarn-client --executor-memory=4g --num-executors=40 --executor-cores=1 --driver-memory=8g -i /tmp/bdg_perf_sequila.scala --packages org.postgresql:postgresql:42.1.1 --conf spark.biodatageeks.perf.testId=$BRANCH_NAME --jars /tmp/bdg-sequila-assembly-*.jar -v'"
+                sh "ssh bdg-perf@cdh00 '. ~/.profile; spark-shell  --conf spark.sql.catalogImplementation=in-memory --conf spark.hadoop.yarn.timeline-service.enabled=false --principal $LOGNAME@CL.II.PW.EDU.PL --keytab $HOME/keytabs/$LOGNAME.keytab --master=yarn-client --executor-memory=4g --num-executors=40 --executor-cores=1 --driver-memory=8g -i /tmp/bdg_perf_sequila.scala --packages org.postgresql:postgresql:42.1.1 --conf spark.biodatageeks.perf.testId=$BRANCH_NAME --jars /tmp/bdg-sequila-assembly-*.jar -v'"
                 sh './build_perf_report.sh'
                  }
 
