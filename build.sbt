@@ -16,7 +16,7 @@ lazy val sparkVersion = Properties.envOrElse("SPARK_VERSION", DEFAULT_SPARK_2_VE
 lazy val hadoopVersion = Properties.envOrElse("SPARK_HADOOP_VERSION", DEFAULT_HADOOP_VERSION)
 
 
-version := s"0.5.1-spark${sparkVersion}-SNAPSHOT"
+version := s"0.5.3-spark-${sparkVersion}-SNAPSHOT"
 
 dependencyOverrides += "com.google.guava" % "guava" % "15.0"
 libraryDependencies += "org.apache.hadoop" % "hadoop-client" % hadoopVersion
