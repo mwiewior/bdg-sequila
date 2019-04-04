@@ -107,7 +107,7 @@ trait BDGAlignFileReaderWriter [T <: BDGAlignInputFormat]{
       .hadoopConfiguration.set(SAMHeaderReader.VALIDATION_STRINGENCY_PROPERTY, ValidationStringency.SILENT.toString)
   }
 
-  def readBAMFile(@transient sqlContext: SQLContext, path: String)(implicit c: ClassTag[T]) = {
+  def readBAMFile(@transient sqlContext: SQLContext, path: String, refPath: Option[String] = None)(implicit c: ClassTag[T]) = {
 
     setLocalConf(sqlContext)
     setConf("spark.biodatageeks.bam.intervals","") //FIXME: disabled PP
@@ -117,19 +117,46 @@ trait BDGAlignFileReaderWriter [T <: BDGAlignInputFormat]{
     val spark = sqlContext
       .sparkSession
     val resolvedPath = BDGTableFuncs.getExactSamplePath(spark,path)
+    val folderPath = BDGTableFuncs.getParentFolderPath(spark,path)
+    val alignReadMethod = spark.sqlContext.getConf(BDGInternalParams.IOReadAlignmentMethod,"hadoopBAM").toLowerCase
 
-    if(!spark.sqlContext.getConf("spark.biodatageeks.bam.useSparkBAM","false").toBoolean)
-      spark.sparkContext
-        .newAPIHadoopFile[LongWritable, SAMRecordWritable, T](path)
-        .map(r => r._2.get())
-    else{
-      import spark_bam._, hammerlab.path._
-      val bamPath = Path(resolvedPath)
-      spark
-        .sparkContext
-        .loadReads(bamPath)
+    alignReadMethod match {
+      case "hadoopbam" => {
+        spark.sparkContext
+          .newAPIHadoopFile[LongWritable, SAMRecordWritable, T](path)
+          .map(r => r._2.get())
+      }
+      case "sparkbam" => {
+        import spark_bam._, hammerlab.path._
+        val bamPath = Path(resolvedPath)
+        spark
+          .sparkContext
+          .loadReads(bamPath)
+      }
+
+      case "disq" => {
+//        println(path)
+        import org.disq_bio.disq.HtsjdkReadsRddStorage
+
+        refPath match {
+          case Some(ref) => {
+          HtsjdkReadsRddStorage
+            .makeDefault(sqlContext.sparkContext)
+            .referenceSourcePath(ref)
+            .read(resolvedPath)
+            .getReads
+            .rdd
+          }
+          case None => {
+            HtsjdkReadsRddStorage
+              .makeDefault(sqlContext.sparkContext)
+              .read(resolvedPath)
+              .getReads
+              .rdd
+          }
+          }
+        }
     }
-
 
   }
 
@@ -275,7 +302,7 @@ class BDGAlignmentRelation[T <:BDGAlignInputFormat](path:String, refPath:Option[
       sqlContext
         .sparkContext
         .hadoopConfiguration
-        .set(CRAMInputFormat.REFERENCE_SOURCE_PATH_PROPERTY,p)
+        .set(CRAMBDGInputFormat.REFERENCE_SOURCE_PATH_PROPERTY,p)
     }
     case _ => None
   }

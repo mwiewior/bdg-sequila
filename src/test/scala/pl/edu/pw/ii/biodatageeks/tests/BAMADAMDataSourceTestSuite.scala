@@ -12,7 +12,7 @@ class BAMADAMDataSourceTestSuite extends FunSuite with DataFrameSuiteBase with B
 
   val bamPath = getClass.getResource("/NA12878.slice.bam").getPath
   val adamPath = getClass.getResource("/NA12878.slice.adam").getPath
-  val cramPath = getClass.getResource("/test.cram").getPath
+  val cramPath = getClass.getResource("/cram/test.cram").getPath
   val refPath = getClass.getResource("/phix-illumina.fa").getPath
   val metricsListener = new MetricsListener(new RecordedMetrics())
   val writer = new PrintWriter(new OutputStreamWriter(System.out))
