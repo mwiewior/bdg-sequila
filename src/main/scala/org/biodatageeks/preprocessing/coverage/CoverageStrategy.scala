@@ -87,8 +87,11 @@ case class BDGCoveragePlan [T<:BDGAlignInputFormat](plan: LogicalPlan, spark: Sp
       .dropRight(1) ++ Array(s"${sampleId}*.${fileExtension}"))
       .mkString("/")
 
-    setLocalConf(spark.sqlContext)
-    lazy val alignments = readBAMFile(spark.sqlContext, samplePath)
+    val refPath = sqlContext
+      .sparkContext
+      .hadoopConfiguration
+      .get(CRAMBDGInputFormat.REFERENCE_SOURCE_PATH_PROPERTY)
+    lazy val alignments = readBAMFile(spark.sqlContext, samplePath, if(refPath.length == 0) None else Some(refPath))
 
     val filterFlag = spark.sqlContext.getConf(BDGInternalParams.filterReadsByFlag, "1796").toInt
 
