@@ -42,6 +42,7 @@ case class BDGSAMRecord(sampleId: String,
 trait BDGAlignFileReaderWriter [T <: BDGAlignInputFormat]{
 
 
+
 //  val bdgSerialize = new BDGSerializer()
   //val serializer = new BDGFastSerializer()
   val confMap = new mutable.HashMap[String,String]()
@@ -120,6 +121,8 @@ trait BDGAlignFileReaderWriter [T <: BDGAlignInputFormat]{
     val folderPath = BDGTableFuncs.getParentFolderPath(spark,path)
     val alignReadMethod = spark.sqlContext.getConf(BDGInternalParams.IOReadAlignmentMethod,"hadoopBAM").toLowerCase
 
+    val logger =  Logger.getLogger(this.getClass.getCanonicalName)
+    logger.info(s"Using ${alignReadMethod} for reading alignment files.")
     alignReadMethod match {
       case "hadoopbam" => {
         spark.sparkContext
