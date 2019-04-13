@@ -26,4 +26,7 @@ object BDGInternalParams {
   /*disq support*/
   final val IOReadAlignmentMethod = "spark.biodatageeks.readAligment.method"
 
+  /*Intel GKL support */
+  final val UseIntelGKL = "spark.biodatageeks.bam.useGKLInflate"
+
 }

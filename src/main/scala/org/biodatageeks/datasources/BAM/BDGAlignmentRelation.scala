@@ -110,21 +110,25 @@ trait BDGAlignFileReaderWriter [T <: BDGAlignInputFormat]{
 
   def readBAMFile(@transient sqlContext: SQLContext, path: String, refPath: Option[String] = None)(implicit c: ClassTag[T]) = {
 
+    val logger =  Logger.getLogger(this.getClass.getCanonicalName)
     setLocalConf(sqlContext)
     setConf("spark.biodatageeks.bam.intervals","") //FIXME: disabled PP
     setHadoopConf(sqlContext)
 
 
+
+
     val spark = sqlContext
       .sparkSession
     val resolvedPath = BDGTableFuncs.getExactSamplePath(spark,path)
-    val folderPath = BDGTableFuncs.getParentFolderPath(spark,path)
+//    val folderPath = BDGTableFuncs.getParentFolderPath(spark,path)
+    logger.info(s"######## Reading ${resolvedPath} or ${path}")
     val alignReadMethod = spark.sqlContext.getConf(BDGInternalParams.IOReadAlignmentMethod,"hadoopBAM").toLowerCase
+    logger.info(s"######## Using ${alignReadMethod} for reading alignment files.")
 
-    val logger =  Logger.getLogger(this.getClass.getCanonicalName)
-    logger.info(s"Using ${alignReadMethod} for reading alignment files.")
     alignReadMethod match {
       case "hadoopbam" => {
+        logger.info(s"Using Intel GKL inflater: ${spark.sqlContext.getConf(BDGInternalParams.UseIntelGKL}")
         spark.sparkContext
           .newAPIHadoopFile[LongWritable, SAMRecordWritable, T](path)
           .map(r => r._2.get())
@@ -138,7 +142,6 @@ trait BDGAlignFileReaderWriter [T <: BDGAlignInputFormat]{
       }
 
       case "disq" => {
-//        println(path)
         import org.disq_bio.disq.HtsjdkReadsRddStorage
 
         refPath match {
