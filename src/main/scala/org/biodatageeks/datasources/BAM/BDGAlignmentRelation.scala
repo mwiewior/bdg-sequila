@@ -128,7 +128,7 @@ trait BDGAlignFileReaderWriter [T <: BDGAlignInputFormat]{
 
     alignReadMethod match {
       case "hadoopbam" => {
-        logger.info(s"Using Intel GKL inflater: ${spark.sqlContext.getConf(BDGInternalParams.UseIntelGKL}")
+        logger.info(s"Using Intel GKL inflater: ${BDGInternalParams.UseIntelGKL}")
         spark.sparkContext
           .newAPIHadoopFile[LongWritable, SAMRecordWritable, T](path)
           .map(r => r._2.get())
