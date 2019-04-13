@@ -105,7 +105,7 @@ trait BDGAlignFileReaderWriter [T <: BDGAlignInputFormat]{
 
     spark
       .sparkContext
-      .hadoopConfiguration.set(SAMHeaderReader.VALIDATION_STRINGENCY_PROPERTY, ValidationStringency.LENIENT.toString)
+      .hadoopConfiguration.set(SAMHeaderReader.VALIDATION_STRINGENCY_PROPERTY, ValidationStringency.SILENT.toString)
   }
 
   def readBAMFile(@transient sqlContext: SQLContext, path: String, refPath: Option[String] = None)(implicit c: ClassTag[T]) = {
@@ -148,7 +148,7 @@ trait BDGAlignFileReaderWriter [T <: BDGAlignInputFormat]{
           case Some(ref) => {
           HtsjdkReadsRddStorage
             .makeDefault(sqlContext.sparkContext)
-            .validationStringency(ValidationStringency.LENIENT)
+            .validationStringency(ValidationStringency.SILENT)
             .referenceSourcePath(ref)
             .read(resolvedPath)
             .getReads

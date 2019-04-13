@@ -725,13 +725,12 @@ Nanopore long reads from WGS analyses
 
   import org.apache.spark.sql.SequilaSession
   import org.biodatageeks.utils.{SequilaRegister, UDFRegister,BDGInternalParams}
-  import htsjdk.samtools.ValidationStringency
+
 
   val ss = SequilaSession(spark)
   SequilaRegister.register(ss)
   /*enable disq support*/
   ss.sqlContext.setConf("spark.biodatageeks.readAligment.method", "disq")
-  ss.sparkContext.hadoopConfiguration.set("VALIDATION_STRINGENCY_PROPERTY", ValidationStringency.LENIENT.toString)
 
   /* WGS -bases-blocks*/
   ss.sql("""
@@ -756,4 +755,4 @@ Nanopore long reads from WGS analyses
 
   /*guppy mapper*/
   spark.time{
-  ss.sql(s"SELECT * FROM bdg_coverage('reads_nanopore','rel5-guppy-0.3.0-chunk10k.sorted', 'blocks')").write.format("parquet").save("rel5-guppy-0.3.0-chunk10k.sorted.parquet")}
+  ss.sql(s"SELECT * FROM bdg_coverage('reads_nanopore','rel5-guppy-0.3.0-chunk10k.sorted', 'blocks')").write.format("parquet").save("/tmp/rel5-guppy-0.3.0-chunk10k.sorted.parquet")}
