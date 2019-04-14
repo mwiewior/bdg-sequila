@@ -310,6 +310,22 @@ In order to start using optimized Intel inflater library you need simply to set 
 Swappable alignment file reading mechanism
 ====================================================================
 
+SeQuila supports 2 methods of reading BAM/CRAM files: `Hadoop-BAM <https://github.com/HadoopGenomics/Hadoop-BAM>`_ (default) and `disq <https://github.com/disq-bio/disq>`_.
+
+.. code-block:: scala
+
+  val ss = SequilaSession(spark)
+  SequilaRegister.register(ss)
+  /*enable disq support*/
+  ss.sqlContext.setConf("spark.biodatageeks.readAligment.method", "disq")
+
+.. code-block:: scala
+
+  val ss = SequilaSession(spark)
+  SequilaRegister.register(ss)
+  /*enable disq support*/
+  ss.sqlContext.setConf("spark.biodatageeks.readAligment.method", "hadoopBAM")
+
 
 ADAM
 ****

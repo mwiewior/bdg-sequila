@@ -756,3 +756,5 @@ Nanopore long reads from WGS analyses
   /*guppy mapper*/
   spark.time{
   ss.sql(s"SELECT * FROM bdg_coverage('reads_nanopore','rel5-guppy-0.3.0-chunk10k.sorted', 'blocks')").write.format("parquet").save("/tmp/rel5-guppy-0.3.0-chunk10k.sorted.parquet")}
+
+  Time taken: 307422 ms
