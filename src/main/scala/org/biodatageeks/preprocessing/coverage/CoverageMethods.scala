@@ -283,8 +283,14 @@ object CoverageMethodsMos {
                eventsArray(i) = (eventsArray(i) + covSum).toShort // add cumSum to zeroth element
 
                while (i < overlapArray.length) {
-                 eventsArray(i) = (eventsArray(i) + overlapArray(i)).toShort
-                 i += 1
+                 try {
+                   eventsArray(i) = (eventsArray(i) + overlapArray(i)).toShort
+                   i += 1
+                 }
+                 catch {
+                   case e: ArrayIndexOutOfBoundsException => logger.error(s" Overlap array length: ${overlapArray.length}, events array length: ${eventsArray.length}")
+                 }
+
                }
                eventsArray
              }
