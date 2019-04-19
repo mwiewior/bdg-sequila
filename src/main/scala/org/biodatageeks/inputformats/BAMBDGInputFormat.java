@@ -233,7 +233,7 @@ public class BAMBDGInputFormat
         final SeekableStream sin =
                 WrapSeekable.openPath(path.getFileSystem(cfg), path);
 
-        final BAMSplitGuesser guesser = new BAMSplitGuesser(sin, cfg);
+        final org.seqdoop.hadoop_bam.BAMBDGSplitGuesser guesser = new org.seqdoop.hadoop_bam.BAMBDGSplitGuesser(sin, cfg);
 
         FileVirtualSplit previousSplit = null;
 
