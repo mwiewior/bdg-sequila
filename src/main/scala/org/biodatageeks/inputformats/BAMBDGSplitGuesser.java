@@ -90,7 +90,7 @@ public class BAMBDGSplitGuesser extends BaseSplitGuesser {
         header = SAMHeaderReader.readSAMHeaderFrom(headerStream, conf);
         referenceSequenceCount = header.getSequenceDictionary().size();
 
-        bamCodec = new BAMRecordCodec(null, new LazyBAMRecordFactory());
+        bamCodec = new BAMRecordCodec(null, new org.seqdoop.hadoop_bam.LazyBAMBDGRecordFactory());
     }
 
     /** Finds a virtual BAM record position in the physical position range
