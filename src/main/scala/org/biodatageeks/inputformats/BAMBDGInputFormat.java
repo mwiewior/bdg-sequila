@@ -247,6 +247,7 @@ public class BAMBDGInputFormat
 
             long alignedBeg = guesser.guessNextBAMRecordStart(beg, end);
 
+
             // As the guesser goes to the next BGZF block before looking for BAM
             // records, the ending BGZF blocks have to always be traversed fully.
             // Hence force the length to be 0xffff, the maximum possible.
