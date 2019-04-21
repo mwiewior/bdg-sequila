@@ -13,22 +13,23 @@ import java.nio.ByteBuffer;
 public class SAMBDGRecordHelper {
     public static void eagerDecode(SAMRecord record) {
 
-        record.eagerDecode();
-//        final int tagsOffset = record.getVariableBinaryRepresentation().length;
-//        final int tagsSize = record.getAttributesBinarySize();
-//        final ByteBuffer byteBuffer = ByteBuffer.wrap(record.getVariableBinaryRepresentation(), tagsOffset, tagsSize);
-//        //final SAMBinaryTagAndValue attributes = BinaryTagCodec.readTags(record.getVariableBinaryRepresentation(), tagsOffset, tagsSize, record.getValidationStringency());
-//        try {
-//            while (byteBuffer.hasRemaining()) {
-//                final short tag = byteBuffer.getShort();
-//                final byte tagType = byteBuffer.get();
-//            }
-//            record.eagerDecode();
-//        }
-//        catch (BufferUnderflowException e) {
-//          System.out.println(String.format("Skipping decoding due to %s",e.getMessage()));
-//          throw new RuntimeIOException();
-//        }
+        //record.eagerDecode();
+        final int tagsOffset = record.getVariableBinaryRepresentation().length;
+        final int tagsSize = record.getAttributesBinarySize();
+        final ByteBuffer byteBuffer = ByteBuffer.wrap(record.getVariableBinaryRepresentation(), tagsOffset, tagsSize);
+        //final SAMBinaryTagAndValue attributes = BinaryTagCodec.readTags(record.getVariableBinaryRepresentation(), tagsOffset, tagsSize, record.getValidationStringency());
+        try {
+            while (byteBuffer.hasRemaining()) {
+                final short tag = byteBuffer.getShort();
+                final byte tagType = byteBuffer.get();
+            }
+            //byteBuffer.rewind();
+            //record.eagerDecode();
+        }
+        catch (BufferUnderflowException e) {
+          System.err.println(String.format("Skipping decoding due to %s",e.getMessage()));
+          throw new RuntimeIOException();
+        }
 
 
     }

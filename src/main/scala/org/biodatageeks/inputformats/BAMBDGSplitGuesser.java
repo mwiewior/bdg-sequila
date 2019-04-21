@@ -222,7 +222,6 @@ public class BAMBDGSplitGuesser extends BaseSplitGuesser {
                     if (!decodedAny && this.in.eof())
                         continue;
                 }
-                inFile.close();
                 return beg+cp0 << 16 | up0;
             }
         }
