@@ -90,7 +90,7 @@ public class BAMBDGSplitGuesser extends BaseSplitGuesser {
         header = SAMHeaderReader.readSAMHeaderFrom(headerStream, conf);
         referenceSequenceCount = header.getSequenceDictionary().size();
 
-        bamCodec = new BAMRecordCodec(null, new org.seqdoop.hadoop_bam.LazyBAMBDGRecordFactory());
+        bamCodec = new BAMRecordCodec(null, new LazyBAMRecordFactory());
     }
 
     /** Finds a virtual BAM record position in the physical position range
@@ -181,7 +181,7 @@ public class BAMBDGSplitGuesser extends BaseSplitGuesser {
                         record.setHeaderStrict(header);
 
 
-                        htsjdk.samtools.SAMBDGRecordHelper.eagerDecode(record); // force decoding of fields
+                        SAMRecordHelper.eagerDecode(record); // force decoding of fields
                         decodedAny = true;
 
                         final int cp2 = (int)(bgzf.getFilePointer() >>> 16);
