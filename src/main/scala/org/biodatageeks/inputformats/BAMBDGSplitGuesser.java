@@ -180,6 +180,7 @@ public class BAMBDGSplitGuesser extends BaseSplitGuesser {
                         }
                         record.setHeaderStrict(header);
 
+
                         htsjdk.samtools.SAMBDGRecordHelper.eagerDecode(record); // force decoding of fields
                         decodedAny = true;
 
