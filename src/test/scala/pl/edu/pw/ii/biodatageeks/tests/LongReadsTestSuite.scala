@@ -10,7 +10,7 @@ class LongReadsTestSuite extends FunSuite with DataFrameSuiteBase with BeforeAnd
 
   val bamPath = getClass.getResource("/nanopore_guppy_slice.bam").getPath
   //val bamPath = "/Users/marek/data/guppy.chr21.bam"
-  val splitSize = "300000"
+  val splitSize = 30000
   val tableNameBAM = "reads"
 
   before {
@@ -26,18 +26,18 @@ class LongReadsTestSuite extends FunSuite with DataFrameSuiteBase with BeforeAnd
       """.stripMargin)
 
   }
-  test("BAM - Nanopore with guppy basecaller") {
-
-    spark.sqlContext.setConf(BDGInternalParams.InputSplitSize, splitSize)
-
-    val session: SparkSession = SequilaSession(spark)
-    SequilaRegister.register(session)
-    session
-      .sparkContext
-      .setLogLevel("INFO")
-    val bdg = session.sql(s"SELECT * FROM ${tableNameBAM}")
-    assert(bdg.count() === 150)
-  }
+//  test("BAM - Nanopore with guppy basecaller") {
+//
+//    spark.sqlContext.setConf(BDGInternalParams.InputSplitSize, splitSize)
+//
+//    val session: SparkSession = SequilaSession(spark)
+//    SequilaRegister.register(session)
+//    session
+//      .sparkContext
+//      .setLogLevel("INFO")
+//    val bdg = session.sql(s"SELECT * FROM ${tableNameBAM}")
+//    assert(bdg.count() === 150)
+//  }
 
   test("BAM - coverage - Nanopore with guppy basecaller") {
 
@@ -48,11 +48,14 @@ class LongReadsTestSuite extends FunSuite with DataFrameSuiteBase with BeforeAnd
       .sparkContext
       .setLogLevel("WARN")
     val query =s"SELECT * FROM bdg_coverage('${tableNameBAM}','nanopore_guppy_slice','bases') order by contigName,start"
-    val covOnePartitionDF = session.sql(query)
-    spark.sqlContext.setConf(BDGInternalParams.InputSplitSize, splitSize)
+    session.sqlContext.setConf(BDGInternalParams.InputSplitSize, (splitSize*10).toString)
+    val covOnePartitionDF = session.sql(query).collect()
 
-    val covMultiPartitionDF = session.sql(query)
+    val session2: SparkSession = SequilaSession(spark)
+    SequilaRegister.register(session2)
+    session2.sqlContext.setConf(BDGInternalParams.InputSplitSize, splitSize.toString)
+    val covMultiPartitionDF = session2.sql(query).collect()
 
-    assertDataFrameEquals(covOnePartitionDF,covMultiPartitionDF)
+    assert(covOnePartitionDF === covMultiPartitionDF)
   }
 }

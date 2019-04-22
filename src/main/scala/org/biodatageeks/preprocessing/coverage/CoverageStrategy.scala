@@ -142,11 +142,12 @@ case class BDGCoveragePlan [T<:BDGAlignInputFormat](plan: LogicalPlan, spark: Sp
           val contig = c.contigName
           if (!minmax.contains(contig))
             minmax += contig -> (Int.MaxValue, 0)
-
-
-          val upd = updateArray
-            .filter(f => (f.contigName == c.contigName && f.startPoint + f.cov.length > c.minPos) && f.minPos < c.minPos)
+          val filterUpd =  updateArray.filter(f => (f.contigName == c.contigName && f.startPoint + f.cov.length > c.minPos) && f.minPos < c.minPos)
+          val upd = filterUpd
             .headOption //should be always 1 or 0 elements
+          logger.warn(s"#### Update struct overlapping: ${filterUpd.length} partiitons")
+          filterUpd.foreach(u=>logger.warn(s"UpdateStruct: ${u.contigName},${u.startPoint}, ${u.cov.length} overlaps ${c.contigName},${c.minPos},${c.maxPos}"))
+
         val cumSum = updateArray //cumSum of all contigRanges lt current contigRange
           .filter(f => f.contigName == c.contigName && f.minPos < c.minPos)
           .map(_.cumSum)
