@@ -289,8 +289,8 @@ object CoverageMethodsMos {
                  }
                  catch {
                    case e: ArrayIndexOutOfBoundsException => logger.error(s" Overlap array length: ${overlapArray.length}, events array length: ${eventsArray.length}")
+                   throw e
                  }
-
                }
                eventsArray
              }

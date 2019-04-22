@@ -122,6 +122,8 @@ case class BDGCoveragePlan [T<:BDGAlignInputFormat](plan: LogicalPlan, spark: Sp
           val right = RightCovEdge(contigName, minPos, startPoint, covToUpdate, c._2._1.sum)
           val left = ContigRange(contigName, minPos, maxPos)
           val cu = new CovUpdate(ArrayBuffer(right), ArrayBuffer(left))
+          val loggerIN =  Logger.getLogger(this.getClass.getCanonicalName)
+          loggerIN.warn(s"#### CoverageAccumulator Adding partition record for: chr:=${contigName},start=${minPos},end=${maxPos},span=${maxPos - minPos + 1}")
           acc.add(cu)
         }
       }

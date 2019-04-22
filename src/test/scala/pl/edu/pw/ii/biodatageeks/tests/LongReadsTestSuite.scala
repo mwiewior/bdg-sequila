@@ -10,7 +10,7 @@ class LongReadsTestSuite extends FunSuite with DataFrameSuiteBase with BeforeAnd
 
   val bamPath = getClass.getResource("/nanopore_guppy_slice.bam").getPath
   //val bamPath = "/Users/marek/data/guppy.chr21.bam"
-  val splitSize = "1000000"
+  val splitSize = "300000"
   val tableNameBAM = "reads"
 
   before {
@@ -37,5 +37,22 @@ class LongReadsTestSuite extends FunSuite with DataFrameSuiteBase with BeforeAnd
       .setLogLevel("INFO")
     val bdg = session.sql(s"SELECT * FROM ${tableNameBAM}")
     assert(bdg.count() === 150)
+  }
+
+  test("BAM - coverage - Nanopore with guppy basecaller") {
+
+
+    val session: SparkSession = SequilaSession(spark)
+    SequilaRegister.register(session)
+    session
+      .sparkContext
+      .setLogLevel("WARN")
+    val query =s"SELECT * FROM bdg_coverage('${tableNameBAM}','nanopore_guppy_slice','bases') order by contigName,start"
+    val covOnePartitionDF = session.sql(query)
+    spark.sqlContext.setConf(BDGInternalParams.InputSplitSize, splitSize)
+
+    val covMultiPartitionDF = session.sql(query)
+
+    assertDataFrameEquals(covOnePartitionDF,covMultiPartitionDF)
   }
 }
