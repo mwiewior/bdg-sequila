@@ -136,38 +136,71 @@ case class BDGCoveragePlan [T<:BDGAlignInputFormat](plan: LogicalPlan, spark: Sp
       val updateMap = new mutable.HashMap[(String, Int), (Option[Array[Short]], Short)]()
       val shrinkMap = new mutable.HashMap[(String, Int), (Int)]()
       val minmax = new mutable.HashMap[String, (Int, Int)]()
+//      val updateArraySplit = new ArrayBuffer[RightCovEdge]()
 
-      contigRanges.foreach {
-        c =>
+    //In case of long reads overlap from n partition can overlap not only n+1 partition but any number of forthcoming partitions
+      //
+//      for(u<-updateArray){
+//        val partitions = contigRanges.filter(c=> (u.contigName == c.contigName && u.startPoint + u.cov.length > c.minPos) && u.minPos < c.minPos)
+//        if (partitions.length  == 1)
+//          updateArraySplit.append(u)
+//        else if(partitions.length > 1){
+//          partitions
+//        }
+//      }
+      var it = 0
+      for (c<-contigRanges.sortBy(r=>(r.contigName,r.minPos))) {
           val contig = c.contigName
           if (!minmax.contains(contig))
             minmax += contig -> (Int.MaxValue, 0)
-          val filterUpd =  updateArray.filter(f => (f.contigName == c.contigName && f.startPoint + f.cov.length > c.minPos) && f.minPos < c.minPos)
-          val upd = filterUpd
-            .headOption //should be always 1 or 0 elements
-          logger.warn(s"#### Update struct overlapping: ${filterUpd.length} partiitons")
-          filterUpd.foreach(u=>logger.warn(s"UpdateStruct: ${u.contigName},${u.startPoint}, ${u.cov.length} overlaps ${c.contigName},${c.minPos},${c.maxPos}"))
+          val filterUpd =  updateArray
+              .sortBy(r=>(r.contigName,r.minPos))
+              .filter(f => (f.contigName == c.contigName && f.startPoint + f.cov.length > c.minPos) && f.minPos < c.minPos)
+          val upd = filterUpd //should be always 1 or 0 elements
+          logger.warn(s"#### Partittion ${c.contigName},${c.minPos},${c.maxPos} overlaped by : ${if(filterUpd.length>0) filterUpd.mkString("|") else "0"} update structs")
+          //filterUpd.foreach(u=>logger.warn(s"UpdateStruct: ${u.contigName},${u.startPoint}, ${u.cov.length} overlaps ${c.contigName},${c.minPos},${c.maxPos}"))
 
         val cumSum = updateArray //cumSum of all contigRanges lt current contigRange
           .filter(f => f.contigName == c.contigName && f.minPos < c.minPos)
           .map(_.cumSum)
           .sum
-          upd match {
-            case Some(u) => {
+          if(upd.length > 0){
+              for(u <- upd) {
+                val overlapLength = (
+                  if ((u.startPoint + u.cov.length) > c.maxPos &&  ( (contigRanges.length - 1 == it) ||  contigRanges(it+1).contigName != c.contigName))  u.startPoint + u.cov.length - c.minPos + 1
+                  else if ((u.startPoint + u.cov.length) > c.maxPos) (c.maxPos - c.minPos)//if it's the last part in contig or the last at all
+                  else u.startPoint + u.cov.length - c.minPos  + 1
+                  )
+                logger.warn(s"##### Overlap length ${overlapLength} for ${it} from ${u.contigName},${u.startPoint},${u.cov.length},${c.minPos}")
+                shrinkMap.get((u.contigName, u.minPos)) match {
+                  case Some(s) => shrinkMap.update((u.contigName, u.minPos), math.min(s,((c.minPos - u.minPos + 1))))
+                  case _ =>  shrinkMap += (u.contigName, u.minPos) -> (c.minPos - u.minPos + 1)
+                }
+                updateMap.get((c.contigName, c.minPos)) match {
+                  case Some(up) => updateMap.update(
+                    (u.contigName, u.minPos),
+                    (Some(up._1
+                      .get
+                      .zipAll(Array.fill[Short](math.max(0,u.startPoint-c.minPos))(0) ++ u.cov.takeRight(overlapLength), 0.toShort, 0.toShort) //first drop abovr part maxPos and take the overlap
+                      .map { case (x, y) => (x + y).toShort }), //merge coverage
+                      (up._2 - u.cov.takeRight(overlapLength).sum).toShort ) // delete anything that is > c.minPos
+                  )
+                  case _ => updateMap += (c.contigName, c.minPos) -> (Some(Array.fill[Short](math.max(0,u.startPoint-c.minPos))(0) ++u.cov.takeRight(overlapLength)), (cumSum - u.cov.takeRight(overlapLength).sum).toShort)
 
-              val overlapLength = (u.startPoint + u.cov.length) - c.minPos + 1
-              shrinkMap += (u.contigName, u.minPos) -> (c.minPos - u.minPos + 1)
-              updateMap += (c.contigName, c.minPos) -> (Some(u.cov.takeRight(overlapLength)), (cumSum - u.cov.takeRight(overlapLength).sum).toShort)
+                }
+
+              }
+            logger.warn(s"#### Shrinking struct ${shrinkMap.mkString("|")}")
             }
-            case None => {
+            else {
               updateMap += (c.contigName, c.minPos) -> (None, cumSum)
 
-            }
           }
           if (c.minPos < minmax(contig)._1)
             minmax(contig) = (c.minPos, minmax(contig)._2)
           if (c.maxPos > minmax(contig)._2)
             minmax(contig) = (minmax(contig)._1, c.maxPos)
+        it += 1
       }
 
 

@@ -41,21 +41,21 @@ class LongReadsTestSuite extends FunSuite with DataFrameSuiteBase with BeforeAnd
 
   test("BAM - coverage - Nanopore with guppy basecaller") {
 
-
+    spark.sqlContext.setConf(BDGInternalParams.ShowAllPositions,"false")
     val session: SparkSession = SequilaSession(spark)
     SequilaRegister.register(session)
     session
       .sparkContext
       .setLogLevel("WARN")
-    val query =s"SELECT * FROM bdg_coverage('${tableNameBAM}','nanopore_guppy_slice','bases') order by contigName,start"
+    val query =s"SELECT * FROM bdg_coverage('${tableNameBAM}','nanopore_guppy_slice','bases') order by contigName,start,end"
     session.sqlContext.setConf(BDGInternalParams.InputSplitSize, (splitSize*10).toString)
-    val covOnePartitionDF = session.sql(query).collect()
+    val covOnePartitionDF = session.sql(query).take(2000)
 
     val session2: SparkSession = SequilaSession(spark)
     SequilaRegister.register(session2)
     session2.sqlContext.setConf(BDGInternalParams.InputSplitSize, splitSize.toString)
-    val covMultiPartitionDF = session2.sql(query).collect()
-
+    val covMultiPartitionDF = session2.sql(query).take(2000)
+    //covOnePartitionDF.foreach(r=>println(r.mkString("|")) )
     assert(covOnePartitionDF === covMultiPartitionDF)
   }
 }
