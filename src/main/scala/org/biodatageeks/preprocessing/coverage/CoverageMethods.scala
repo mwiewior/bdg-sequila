@@ -286,22 +286,20 @@ object CoverageMethodsMos {
        val shrink = b.value.shrink
        val(contig,(eventsArray,minPos,maxPos,contigLength,maxCigarLength)) = c // to REFACTOR
        var eventsArrMutable = eventsArray
-       logger.warn(s"#### Update Partition: $contig, min=$minPos max=$maxPos len:${eventsArray.length} span: ${maxPos-minPos}")
+       logger.warn(s"#### Update Partition: $contig, min=$minPos max=$maxPos len:${eventsArray.length} span: ${maxPos-minPos} ")
 
-       val updArray = upd.get( (contig,minPos) ) match { // check if there is a value for contigName and minPos in upd, returning array of coverage and cumSum to update current contigRange
-         case Some((arr,covSum)) => { // array of covs and cumSum
+       val updArray = upd.get((contig, minPos)) match { // check if there is a value for contigName and minPos in upd, returning array of coverage and cumSum to update current contigRange
+         case Some((arr, covSum)) => { // array of covs and cumSum
            arr match {
              case Some(overlapArray) => {
-               //logger.warn(s"[1]Updating array in ev_len=${eventsArrMutable.length}, ov_len=${overlapArray.length}")
                if (overlapArray.length > eventsArray.length) {
                  eventsArrMutable = eventsArray ++ Array.fill[Short](overlapArray.length - eventsArray.length)(0) // extend array
-                // logger.warn(s"[2]Updating array in ev_len=${eventsArrMutable.length}, ov_len=${overlapArray.length}")
+                 // logger.warn(s"Overlap longer than events arr. Updating array in ev_len=${eventsArrMutable.length}, ov_len=${overlapArray.length}")
                }
 
                var i = 0
                logger.warn(s"$contig, min=$minPos max=$maxPos updating: ${eventsArrMutable.take(10).mkString(",")} with ${overlapArray.take(10).mkString(",")} and $covSum ")
                eventsArrMutable(i) = (eventsArrMutable(i) + covSum).toShort // add cumSum to zeroth element
-
 
                while (i < overlapArray.length) {
                  try {
@@ -310,12 +308,10 @@ object CoverageMethodsMos {
                  }
                  catch {
                    case e: ArrayIndexOutOfBoundsException => logger.error(s" Overlap array length: ${overlapArray.length}, events array length: ${eventsArray.length}")
-                   throw e
+                     throw e
                  }
                }
                logger.warn(s"$contig, min=$minPos max=$maxPos Updated array ${eventsArrMutable.take(10).mkString(",")}")
-               //logger.warn(s"Updated array with overlap lep ${overlapArray.length} after $i iterations new_ev_len=${eventsArray.length} max'=${minPos+eventsArray.length-1}")
-
                eventsArrMutable
              }
              case None => {
@@ -324,9 +320,9 @@ object CoverageMethodsMos {
              }
            }
          }
-           case None =>{
-             eventsArrMutable
-           }
+         case None => {
+           eventsArrMutable
+         }
        }
        val shrinkArray = shrink.get( (contig, minPos) ) match {
          case Some(len) => {
@@ -335,12 +331,9 @@ object CoverageMethodsMos {
          case None => updArray
        }
        logger.warn(s"#### End of Update Partition: $contig, min=$minPos max=$maxPos len:${eventsArray.length} span: ${maxPos-minPos}")
-       //logger.warn(s"Shrinked contig. min=$minPos max'=${minPos + shrinkArray.length -1} new_len=${shrinkArray.length}")
        (contig, (shrinkArray, minPos, maxPos, contigLength) )
      }
    }
-    logger.warn(s"### newCovEvents count ${newCovEvents.count()}")
     newCovEvents
-
   }
 }

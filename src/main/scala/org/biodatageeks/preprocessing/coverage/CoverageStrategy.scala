@@ -158,9 +158,9 @@ case class BDGCoveragePlan [T<:BDGAlignInputFormat](plan: LogicalPlan, spark: Sp
             .filter(f => (f.contigName == contig && f.startPoint + f.cov.length > c.minPos) && f.minPos < c.minPos) // updates for overlaps
         //.filter(f => (f.contigName == c.contigName && f.startPoint + f.cov.length > c.minPos) && f.minPos < c.minPos)
           val upd = filterUpd //should be always 1 or 0 elements, not true for long reads
-          logger.warn(s"#### Partittion ${c.contigName},${c.minPos},${c.maxPos} overlaped by : ${if(filterUpd.length>0) {filterUpd.mkString("|")} else "0"} update structs")
+         // logger.warn(s"#### Partittion ${c.contigName},${c.minPos},${c.maxPos} overlaped by : ${if(filterUpd.length>0) {filterUpd.mkString("|")} else "0"} update structs")
 
-        filterUpd.foreach(u=>logger.warn(s"UpdateStruct: ${u.contigName},${u.startPoint}, ${u.cov.length} overlaps ${c.contigName},${c.minPos},${c.maxPos}"))
+        filterUpd.foreach(u=>logger.warn(s"UpdateStructs overlapping ${c.contigName},${c.minPos},${c.maxPos} : ${u.contigName},${u.minPos}, ${u.startPoint}, ${u.cov.length} "))
 
         val cumSum = updateArray //cumSum of all contigRanges lt current contigRange
           .filter(f => f.contigName == c.contigName && f.minPos < c.minPos)
@@ -171,10 +171,8 @@ case class BDGCoveragePlan [T<:BDGAlignInputFormat](plan: LogicalPlan, spark: Sp
               for(u <- upd) {
                 val overlapLength =
                   if ((u.startPoint + u.cov.length) > c.maxPos &&  ( (contigRanges.length - 1 == it) ||  contigRanges(it+1).contigName != c.contigName))  {
-//                    logger.warn(s"Counting overlap #1 ${u.startPoint + u.cov.length - c.minPos + 1}")
-                    //logger.warn(s"Counting overlap #1 ${c.maxPos-c.minPos+1}")
+//                  logger.warn(s"Counting overlap #1 ${u.startPoint + u.cov.length - c.minPos + 1}")
                     u.startPoint + u.cov.length - c.minPos + 1
-                   // c.maxPos-c.minPos+1
                   }
                   else if ((u.startPoint + u.cov.length) > c.maxPos) {
                     (c.maxPos - c.minPos)
@@ -183,7 +181,7 @@ case class BDGCoveragePlan [T<:BDGAlignInputFormat](plan: LogicalPlan, spark: Sp
                     u.startPoint + u.cov.length - c.minPos  + 1
                   }
 
-                logger.warn(s"##### Overlap length ${overlapLength} for ${it} from ${u.contigName},${u.startPoint},${u.cov.length},${c.minPos}")
+                logger.warn(s"##### Overlap length ${overlapLength} for ${it} from ${u.contigName},${u.minPos}, ${u.startPoint},${u.cov.length}")
                 shrinkMap.get((u.contigName, u.minPos)) match {
                   case Some(s) => shrinkMap.update((u.contigName, u.minPos), math.min(s,c.minPos - u.minPos + 1))
                   case _ =>  shrinkMap += (u.contigName, u.minPos) -> (c.minPos - u.minPos + 1)
@@ -194,7 +192,8 @@ case class BDGCoveragePlan [T<:BDGAlignInputFormat](plan: LogicalPlan, spark: Sp
                     val newArr=up._1.get.zipAll(arr, 0.toShort ,0.toShort).map{ case (x, y) => (x + y).toShort }
                     val newCumSum= (up._2 - u.cov.takeRight(overlapLength).sum).toShort
 
-                      //logger.warn(s"[$it]next update to updateMap: ${up._1.get.length}, ${newArr.length}")
+                    logger.warn(s"overlap u.minPos=${u.minPos} len = ${newArr.length}")
+                    logger.warn(s"next update to updateMap: c.minPos=${c.minPos}, u.minPos=${u.minPos} curr_len${up._1.get.length}, new_len = ${newArr.length}")
 
 //                    updateMap.update(
 //                    (u.contigName, u.minPos),
@@ -204,9 +203,13 @@ case class BDGCoveragePlan [T<:BDGAlignInputFormat](plan: LogicalPlan, spark: Sp
 //                      .map { case (x, y) => (x + y).toShort }), //merge coverage
 //                      (up._2 - u.cov.takeRight(overlapLength).sum).toShort ) // delete anything that is > c.minPos
 
-                      updateMap.update((c.contigName, c.minPos), (Some(newArr), newCumSum)) // delete anything that is > c.minPos
+                    if(u.minPos < c.minPos)
+                      updateMap.update((c.contigName, c.minPos), (Some(newArr), newCumSum))
+                    else
+                      updateMap.update((c.contigName, u.minPos), (Some(newArr), newCumSum)) // delete anything that is > c.minPos
                   case _ => {
-                      //logger.warn(s"[$it]first update to updateMap: ${math.max(0,u.startPoint-c.minPos)}, $overlapLength ")
+                    logger.warn(s"overlap u.minPos=${u.minPos} u.max = ${u.minPos + overlapLength - 1} len = ${overlapLength}")
+                    logger.warn(s"first update to updateMap: ${math.max(0,u.startPoint-c.minPos)}, $overlapLength ")
                     updateMap += (c.contigName, c.minPos) -> (Some(Array.fill[Short](math.max(0,u.startPoint-c.minPos))(0) ++u.cov.takeRight(overlapLength)), (cumSum - u.cov.takeRight(overlapLength).sum).toShort)
                   }
 
