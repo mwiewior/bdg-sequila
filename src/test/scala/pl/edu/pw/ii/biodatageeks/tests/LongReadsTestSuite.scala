@@ -9,7 +9,6 @@ import org.scalatest.{BeforeAndAfter, FunSuite}
 class LongReadsTestSuite extends FunSuite with DataFrameSuiteBase with BeforeAndAfter with SharedSparkContext {
 
   val bamPath = getClass.getResource("/nanopore_guppy_slice.bam").getPath
-  //val bamPath = "/Users/marek/data/guppy.chr21.bam"
   val splitSize = 30000
   val tableNameBAM = "reads"
 
@@ -28,39 +27,28 @@ class LongReadsTestSuite extends FunSuite with DataFrameSuiteBase with BeforeAnd
   }
 //  test("BAM - Nanopore with guppy basecaller") {
 //
-//    spark.sqlContext.setConf(BDGInternalParams.InputSplitSize, splitSize)
-//
 //    val session: SparkSession = SequilaSession(spark)
 //    SequilaRegister.register(session)
 //    session
 //      .sparkContext
-//      .setLogLevel("INFO")
+//      .setLogLevel("WARN")
 //    val bdg = session.sql(s"SELECT * FROM ${tableNameBAM}")
 //    assert(bdg.count() === 150)
 //  }
 
   test("BAM - coverage - Nanopore with guppy basecaller") {
-
-    spark.sqlContext.setConf(BDGInternalParams.ShowAllPositions,"false")
-    val session: SparkSession = SequilaSession(spark)
-    SequilaRegister.register(session)
-    session
-      .sparkContext
-      .setLogLevel("WARN")
-    val query =s"SELECT * FROM bdg_coverage('${tableNameBAM}','nanopore_guppy_slice','bases') order by contigName,start,end"
-    session.sqlContext.setConf(BDGInternalParams.InputSplitSize, (splitSize*10).toString)
-    val covOnePartitionDF = session.sql(query)//.take (10)//take(12180)//.drop(12150) // fails from 12153
-    covOnePartitionDF.coalesce(1).write.mode("overwrite").option("delimiter", "\t").csv("/Users/aga/workplace/onePart.csv")
-
+    spark.sqlContext.setConf(BDGInternalParams.InputSplitSize, (splitSize*10).toString)
     val session2: SparkSession = SequilaSession(spark)
     SequilaRegister.register(session2)
-    session2.sqlContext.setConf(BDGInternalParams.InputSplitSize, splitSize.toString)
-    val covMultiPartitionDF = session2.sql(query)//.take(10)//take(12180).drop(12150)
-    covMultiPartitionDF.coalesce(1).write.mode("overwrite").option("delimiter", "\t").csv("/Users/aga/workplace/multiPart.csv")
+    val query = s"SELECT contigName, start, coverage FROM bdg_coverage('${tableNameBAM}','nanopore_guppy_slice','bases') order by contigName,start,end"
 
+    val covMultiPartitionDF = session2.sql(query)
 
-    //println (s"${covOnePartitionDF.count()}, ${covMultiPartitionDF.count} ")
-    //assert(covOnePartitionDF === covMultiPartitionDF)
-    //assertDataFrameEquals(covOnePartitionDF.orderBy("contigName", "start"), covMultiPartitionDF.orderBy("contigName", "start"))
+    //covMultiPartitionDF.coalesce(1).write.mode("overwrite").option("delimiter", "\t").csv("/Users/aga/workplace/multiPart.csv")
+    assert(covMultiPartitionDF.count() == 45842) // total count check
+    assert(covMultiPartitionDF.where("contigName='chr21' and start == 5010515").first().getShort(2) == 1) // value check [first element]
+    assert(covMultiPartitionDF.where("contigName='chr21' and start == 5022667").first().getShort(2) == 15) // value check [partition boundary]
+    assert(covMultiPartitionDF.where("contigName='chr21' and start == 5036398").first().getShort(2) == 14) // value check [partition boundary]
+    assert(covMultiPartitionDF.where("contigName='chr21' and start == 5056356").first().getShort(2) == 1) // value check [last element]
   }
 }

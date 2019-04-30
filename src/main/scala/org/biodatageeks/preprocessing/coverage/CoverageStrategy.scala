@@ -88,8 +88,6 @@ case class BDGCoveragePlan [T<:BDGAlignInputFormat](plan: LogicalPlan, spark: Sp
       .dropRight(1) ++ Array(s"${sampleId}*.${fileExtension}"))
       .mkString("/")
 
-
-
     val refPath = sqlContext
       .sparkContext
       .hadoopConfiguration
@@ -131,6 +129,8 @@ case class BDGCoveragePlan [T<:BDGAlignInputFormat](plan: LogicalPlan, spark: Sp
 
     def prepareBroadcast(a: CovUpdate) = {
 
+      logger.warn("Preparing broadcast")
+
       val contigRanges = a.left
       val updateArray = a.right
       val updateMap = new mutable.HashMap[(String, Int), (Option[Array[Short]], Short)]()
@@ -160,7 +160,7 @@ case class BDGCoveragePlan [T<:BDGAlignInputFormat](plan: LogicalPlan, spark: Sp
           val upd = filterUpd //should be always 1 or 0 elements, not true for long reads
          // logger.warn(s"#### Partittion ${c.contigName},${c.minPos},${c.maxPos} overlaped by : ${if(filterUpd.length>0) {filterUpd.mkString("|")} else "0"} update structs")
 
-        filterUpd.foreach(u=>logger.warn(s"UpdateStructs overlapping ${c.contigName},${c.minPos},${c.maxPos} : ${u.contigName},${u.minPos}, ${u.startPoint}, ${u.cov.length} "))
+        //filterUpd.foreach(u=>logger.warn(s"UpdateStructs overlapping ${c.contigName},${c.minPos},${c.maxPos} : ${u.contigName},${u.minPos}, ${u.startPoint}, ${u.cov.length} "))
 
         val cumSum = updateArray //cumSum of all contigRanges lt current contigRange
           .filter(f => f.contigName == c.contigName && f.minPos < c.minPos)
@@ -212,12 +212,8 @@ case class BDGCoveragePlan [T<:BDGAlignInputFormat](plan: LogicalPlan, spark: Sp
                     logger.warn(s"first update to updateMap: ${math.max(0,u.startPoint-c.minPos)}, $overlapLength ")
                     updateMap += (c.contigName, c.minPos) -> (Some(Array.fill[Short](math.max(0,u.startPoint-c.minPos))(0) ++u.cov.takeRight(overlapLength)), (cumSum - u.cov.takeRight(overlapLength).sum).toShort)
                   }
-
                 }
-
               }
-
-
             logger.warn(s"#### Update struct length: ${updateMap(c.contigName, c.minPos)._1.get.length}")
             logger.warn(s"#### Shrinking struct ${shrinkMap.mkString("|")}")
             }
@@ -231,13 +227,12 @@ case class BDGCoveragePlan [T<:BDGAlignInputFormat](plan: LogicalPlan, spark: Sp
             minmax(contig) = (minmax(contig)._1, c.maxPos)
         it += 1
       }
-
+      logger.warn(s"Prepared broadcast $updateMap, $shrinkMap")
 
       UpdateStruct(updateMap, shrinkMap, minmax)
     }
 
     val covBroad = spark.sparkContext.broadcast(prepareBroadcast(acc.value()))
-
     lazy val reducedEvents = CoverageMethodsMos.upateContigRange(covBroad, events)
 
     val blocksResult = {
@@ -262,7 +257,6 @@ case class BDGCoveragePlan [T<:BDGAlignInputFormat](plan: LogicalPlan, spark: Sp
       } catch {
         case e: Exception => None
     }
-
 
 
     lazy val cov =

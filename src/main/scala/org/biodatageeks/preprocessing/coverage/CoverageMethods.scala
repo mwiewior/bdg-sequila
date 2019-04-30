@@ -16,8 +16,6 @@ abstract class AbstractCovRecord {
   def start: Int
   def end: Int
   //def cov: T
-
-
 }
 
 
@@ -282,6 +280,7 @@ object CoverageMethodsMos {
 
    val newCovEvents = covEvents.map {
      c => {
+       logger.warn (s"updating partition ${c._1}, ${c._2._2}")
        val upd = b.value.upd
        val shrink = b.value.shrink
        val(contig,(eventsArray,minPos,maxPos,contigLength,maxCigarLength)) = c // to REFACTOR
