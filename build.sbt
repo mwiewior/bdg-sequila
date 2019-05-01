@@ -4,13 +4,13 @@ import scala.util.Properties
 
 name := """bdg-sequila"""
 
-version := "0.5.5-spark-2.4.1-SNAPSHOT"
+version := "0.5.5-spark-2.4.2-SNAPSHOT"
 
 organization := "org.biodatageeks"
 
 scalaVersion := "2.11.8"
 
-val DEFAULT_SPARK_2_VERSION = "2.4.1"
+val DEFAULT_SPARK_2_VERSION = "2.4.2"
 val DEFAULT_HADOOP_VERSION = "2.6.5"
 
 

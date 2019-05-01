@@ -129,7 +129,7 @@ case class BDGCoveragePlan [T<:BDGAlignInputFormat](plan: LogicalPlan, spark: Sp
 
     def prepareBroadcast(a: CovUpdate) = {
 
-      logger.warn("Preparing broadcast")
+      logger.debug("Preparing broadcast")
 
       val contigRanges = a.left
       val updateArray = a.right
