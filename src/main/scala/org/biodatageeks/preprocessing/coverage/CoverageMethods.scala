@@ -276,16 +276,16 @@ object CoverageMethodsMos {
 
 
   def upateContigRange(b:Broadcast[UpdateStruct],covEvents: RDD[(String,(Array[Short],Int,Int,Int,Int))]) = {
-    logger.warn(s"### covEvents count ${covEvents.count()}")
+    logger.info(s"### covEvents count ${covEvents.count()}")
 
    val newCovEvents = covEvents.map {
      c => {
-       logger.warn (s"updating partition ${c._1}, ${c._2._2}")
+       logger.debug (s"updating partition ${c._1}, ${c._2._2}")
        val upd = b.value.upd
        val shrink = b.value.shrink
        val(contig,(eventsArray,minPos,maxPos,contigLength,maxCigarLength)) = c // to REFACTOR
        var eventsArrMutable = eventsArray
-       logger.warn(s"#### Update Partition: $contig, min=$minPos max=$maxPos len:${eventsArray.length} span: ${maxPos-minPos} ")
+       logger.debug(s"#### Update Partition: $contig, min=$minPos max=$maxPos len:${eventsArray.length} span: ${maxPos-minPos} ")
 
        val updArray = upd.get((contig, minPos)) match { // check if there is a value for contigName and minPos in upd, returning array of coverage and cumSum to update current contigRange
          case Some((arr, covSum)) => { // array of covs and cumSum
@@ -297,7 +297,7 @@ object CoverageMethodsMos {
                }
 
                var i = 0
-               logger.warn(s"$contig, min=$minPos max=$maxPos updating: ${eventsArrMutable.take(10).mkString(",")} with ${overlapArray.take(10).mkString(",")} and $covSum ")
+               logger.debug(s"$contig, min=$minPos max=$maxPos updating: ${eventsArrMutable.take(10).mkString(",")} with ${overlapArray.take(10).mkString(",")} and $covSum ")
                eventsArrMutable(i) = (eventsArrMutable(i) + covSum).toShort // add cumSum to zeroth element
 
                while (i < overlapArray.length) {
@@ -310,7 +310,7 @@ object CoverageMethodsMos {
                      throw e
                  }
                }
-               logger.warn(s"$contig, min=$minPos max=$maxPos Updated array ${eventsArrMutable.take(10).mkString(",")}")
+               logger.debug(s"$contig, min=$minPos max=$maxPos Updated array ${eventsArrMutable.take(10).mkString(",")}")
                eventsArrMutable
              }
              case None => {
@@ -329,7 +329,7 @@ object CoverageMethodsMos {
          }
          case None => updArray
        }
-       logger.warn(s"#### End of Update Partition: $contig, min=$minPos max=$maxPos len:${eventsArray.length} span: ${maxPos-minPos}")
+       logger.debug(s"#### End of Update Partition: $contig, min=$minPos max=$maxPos len:${eventsArray.length} span: ${maxPos-minPos}")
        (contig, (shrinkArray, minPos, maxPos, contigLength) )
      }
    }
