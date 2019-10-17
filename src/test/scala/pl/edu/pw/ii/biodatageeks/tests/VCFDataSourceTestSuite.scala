@@ -17,7 +17,7 @@ class VCFDataSourceTestSuite extends FunSuite with DataFrameSuiteBase with Befor
     spark.sql(
       s"""
          |CREATE TABLE ${tableNameVCF}
-         |USING org.biodatageeks.datasources.BAM.VCFDataSource
+         |USING org.biodatageeks.datasources.VCF.VCFDataSource
          |OPTIONS(path "${vcfPath}")
          |
       """.stripMargin)

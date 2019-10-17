@@ -1,18 +1,8 @@
-package org.biodatageeks.datasources.BAM
+package org.biodatageeks.datasources.VCF
 
-import org.apache.log4j.Logger
-import htsjdk.samtools.ValidationStringency
-import htsjdk.variant.variantcontext.VariantContext
-import org.apache.log4j.Logger
 import org.apache.spark.internal.Logging
-import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.catalyst.encoders.{ExpressionEncoder, RowEncoder}
-import org.apache.spark.sql.catalyst.expressions.UnsafeRow
-import org.apache.spark.sql.{Encoders, Row, RowFactory, SQLContext}
+import org.apache.spark.sql.SQLContext
 import org.apache.spark.sql.sources._
-import org.apache.spark.sql.types.{BooleanType, StructType}
-import org.disq_bio.disq.{HtsjdkReadsRddStorage, HtsjdkVariantsRddStorage}
 
 
 class VCFRelation(path: String)(@transient val sqlContext: SQLContext) extends BaseRelation

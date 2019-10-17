@@ -1,7 +1,7 @@
-package org.biodatageeks.datasources.BAM
+package org.biodatageeks.datasources.VCF
 
 import org.apache.spark.sql.SQLContext
-import org.apache.spark.sql.sources.{BaseRelation, CreatableRelationProvider, DataSourceRegister, RelationProvider}
+import org.apache.spark.sql.sources.{BaseRelation, DataSourceRegister, RelationProvider}
 
 class VCFDataSource extends DataSourceRegister
   with RelationProvider {
