@@ -70,9 +70,9 @@ libraryDependencies += "com.lifeomic" % "spark-vcf" % "0.3.2"
 
 
 
+fork := true
+fork in Test := true
 
-fork := false
-fork in Test := false
 //parallelExecution in Test := false
 //javaOptions in Test += "-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=9999"
 //javaOptions in run += "-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=9999"

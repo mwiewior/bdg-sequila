@@ -29,14 +29,14 @@ class VCFDataSourceTestSuite extends FunSuite with DataFrameSuiteBase with Befor
       .sql(query)
       .printSchema()
 
+    println(spark.sparkContext.hadoopConfiguration.get("hadoop.io.compression.codecs"))
+
     assert(spark
       .sql(query)
       .first()
       .getString(8) === "PASS")
 
     assert(spark.sql(query).count() === 21L)
-
-//    spark.sql(s"describe ${tableNameVCF}").show(false)
   }
 
 
