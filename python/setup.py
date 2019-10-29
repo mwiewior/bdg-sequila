@@ -6,7 +6,7 @@ setup(
     packages=['sequila'],
     install_requires=[
         'typeguard==2.5.0',
-        'pyspark==2.4.4',
+        'pyspark==2.4.3',
         'findspark'
     ],
     author='biodatageeks.org',
@@ -16,7 +16,7 @@ setup(
     license='Apache License 2.0',
     classifiers=[
         'Intended Audience :: Developers',
-        'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.6',
     ],
     url='https://github.com/ZSI-Bio/bdg-sequila'
 )
