@@ -1,0 +1,77 @@
+{
+"type": "record",
+"name": "Alignment",
+"namespace": "org.biodatageeks.formats",
+"fields": [
+    {
+        "name": "qname",
+        "type": "string",
+        "doc": "Query template NAME"
+    },
+    {
+        "name": "flag",
+        "type": "int",
+        "doc": "bitwise FLAG"
+    },
+    {
+        "name": "rname",
+        "type": "string",
+        "doc": "Reference sequence NAME"
+    },
+    {
+        "name": "pos",
+        "type": "int",
+        "doc": "1-based leftmost mapping POSition"
+    },
+    {
+        "name": "mapq",
+        "type": "int",
+        "doc": "MAPping Quality"
+    },
+    {
+        "name": "cigar",
+        "type": "string",
+        "doc": "CIGAR string"
+    },
+    {
+        "name": "rnext",
+        "type": "string",
+        "doc": "Reference name of the mate/next read"
+    },
+    {
+        "name": "pnext",
+        "type": "int",
+        "doc": "Position of the mate/next read"
+    },
+    {
+        "name": "tlen",
+        "type": "int",
+        "doc": "observed Template LENgth"
+    },
+    {
+        "name": "seq",
+        "type": "string",
+        "doc": "segment SEQuence"
+    },
+    {
+        "name": "qual",
+        "type": "string",
+        "doc": "ASCII of Phred-scaled base QUALity+33"
+    },
+    {
+        "name": "tag",
+        "doc": "TAGS",
+        "type": {
+            "type" : "record",
+            "name" : "Tag",
+            "fields" : [
+                {
+                    "name": "AM",
+                    "type": "int",
+                    "doc": "The smallest template-independent mapping quality in the template"
+                }
+            ]
+        }
+    }
+]
+}

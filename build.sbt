@@ -73,7 +73,7 @@ libraryDependencies += "org.scala-lang.modules" % "scala-java8-compat_2.11" % "0
 avroSpecificSourceDirectories in Compile += (sourceDirectory in Compile).value / "avro/input"
 
 sourceGenerators in Compile += (avroScalaGenerate in Compile).taskValue
-watchSources ++= ((avroSpecificSourceDirectories in Compile).value ** "*.avdl").get
+watchSources ++= ((avroSpecificSourceDirectories in Compile).value ** "*.avsc").get
 
 avroSpecificScalaSource in Compile := new java.io.File("src/main/org/biodatageeks/formats")
 
