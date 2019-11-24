@@ -24,6 +24,18 @@ class BAMBaseTestSuite
       """.stripMargin)
   }
 
+  test("Read BAM wide record"){
+    val ss = SequilaSession(spark)
+    SequilaRegister.register(ss)
+    val df = ss.sql(s"""
+                      |SELECT * FROM $tableNameBAM
+      """.stripMargin)
+    df.printSchema()
+    df.show(1,false)
+
+  }
+
+
   test("Repartitioning") {
     spark.sqlContext.setConf(InternalParams.InputSplitSize, "100000")
     val ss = SequilaSession(spark)

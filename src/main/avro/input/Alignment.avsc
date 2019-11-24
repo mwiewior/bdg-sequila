@@ -74,19 +74,22 @@
         "doc": "ASCII of Phred-scaled base QUALity+33"
     },
     {
-        "name": "tag",
-        "doc": "TAGS",
-        "type": {
-            "type" : "record",
-            "name" : "Tag",
-            "fields" : [
-                {
-                    "name": "AM",
-                    "type": "int",
-                    "doc": "The smallest template-independent mapping quality in the template"
-                }
-            ]
-        }
+        "name": "tag_am",
+        "doc": "The smallest template-independent mapping quality in the template",
+        "type": ["long", "null"],
+         "default": null
+    },
+    {
+        "name": "tag_mq",
+        "doc": "Mapping quality of the mate/next segment",
+        "type": ["int", "null"],
+        "default": null
+    },
+    {
+        "name": "tag_oq",
+        "doc": "Original base quality",
+        "type": ["string", "null"],
+        "default": null
     }
 ]
 

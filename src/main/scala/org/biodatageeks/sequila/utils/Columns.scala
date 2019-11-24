@@ -6,7 +6,9 @@ import org.biodatageeks.formats.Alignment
 object Columns {
 
   /*BAM/CRAM Fields*/
-  private val alignmentColumns = ScalaFuncs.classAccessors[Alignment]
+  private val alignmentColumns = ScalaFuncs
+    .classAccessors[Alignment]
+    .map(_.name.toString)
 
   final val SAMPLE = alignmentColumns(0)
   final val QNAME = alignmentColumns(1)

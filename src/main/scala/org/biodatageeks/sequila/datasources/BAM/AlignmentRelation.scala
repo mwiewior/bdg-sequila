@@ -2,7 +2,7 @@ package org.biodatageeks.sequila.datasources.BAM
 
 
 import htsjdk.samtools.{SAMRecord, ValidationStringency}
-import org.apache.hadoop.io.{LongWritable}
+import org.apache.hadoop.io.LongWritable
 import org.apache.hadoop.mapreduce.lib.input.FileSplit
 import org.apache.log4j.Logger
 import org.apache.spark.rdd.{NewHadoopRDD, RDD}
@@ -15,9 +15,10 @@ import org.seqdoop.hadoop_bam._
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 import scala.reflect.ClassTag
+import org.biodatageeks.sequila.utils.{Columns, DataQualityFuncs, FastSerializer, InternalParams, ScalaFuncs, TableFuncs}
+import org.biodatageeks.formats.{Alignment, Tag}
+import scala.reflect.runtime.universe._
 
-import org.biodatageeks.sequila.utils.{Columns, DataQualityFuncs, FastSerializer, InternalParams, TableFuncs}
-import org.biodatageeks.formats.Alignment
 
 trait BDGAlignFileReaderWriter [T <: BDGAlignInputFormat]{
 
@@ -213,7 +214,18 @@ trait BDGAlignFileReaderWriter [T <: BDGAlignInputFormat]{
       case Columns.RNEXT  =>    DataQualityFuncs.cleanContig(r.getMateReferenceName) //FIXME: to check if the mapping is correct
       case Columns.PNEXT  =>    r.getMateAlignmentStart //FIXME: to check if the mapping is correct
       case Columns.TLEN   =>    r.getLengthOnReference //FIXME: to check if the mapping is correct
-      case Columns.TAG    =>    null
+      case s if s.startsWith("tag_")    => {
+        val fields = ScalaFuncs.classAccessors[Alignment]
+        val tagField = fields.filter(_.name.toString == s).head
+        val tagFieldName = tagField.name.toString.replaceFirst("tag_", "").toUpperCase
+        val tagFieldType = tagField.typeSignature.resultType
+        tagFieldType match {
+          case t if t =:= typeOf[Option[Long]]  => {val v = r.getUnsignedIntegerAttribute(tagFieldName);if(v == null) None else Some (v)}
+          case t if t =:= typeOf[Option[Int]]  => {val v = r.getIntegerAttribute(tagFieldName);if(v == null) None else Some (v)}
+          case t if t =:= typeOf[Option[String]] => {val v = r.getStringAttribute(tagFieldName);if(v == null) None else Some (v)}
+          case _ => throw new Exception (s"Cannot process ${tagFieldName} with type: ${tagFieldType}.")
+        }
+      }
       case _              =>    throw new Exception(s"Unknown column found: ${colName}")
     }
 
