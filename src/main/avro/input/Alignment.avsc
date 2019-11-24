@@ -4,6 +4,11 @@
 "namespace": "org.biodatageeks.formats",
 "fields": [
     {
+        "name": "sample",
+        "type": "string",
+        "doc": "SAMPLE name"
+    },
+    {
         "name": "qname",
         "type": "string",
         "doc": "Query template NAME"
@@ -22,6 +27,16 @@
         "name": "pos",
         "type": "int",
         "doc": "1-based leftmost mapping POSition"
+    },
+    {
+        "name": "start",
+        "type": "int",
+        "doc": "1-based leftmost mapping POSition of a read"
+    },
+    {
+        "name": "end",
+        "type": "int",
+        "doc": "1-based rightmost mapping POSition of a read"
     },
     {
         "name": "mapq",
@@ -74,4 +89,5 @@
         }
     }
 ]
+
 }

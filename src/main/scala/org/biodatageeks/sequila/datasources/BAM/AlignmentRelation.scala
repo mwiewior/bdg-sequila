@@ -23,42 +23,25 @@ import scala.reflect.ClassTag
 import org.apache.spark.rdd.PairRDDFunctions
 import org.biodatageeks.sequila.outputformats.BAMOutputFormat
 import org.biodatageeks.sequila.utils.{Columns, FastSerializer, InternalParams, TableFuncs}
-import org.nustaq.serialization.FSTConfiguration
 
+import org.biodatageeks.formats.Alignment
 
-case class BDGSAMRecord(sampleId: String,
-                     contigName:String,
-                     start:Int,
-                     end:Int,
-                     cigar:String,
-                     mapq:Int,
-                     baseq: String,
-                     sequence:String,
-                     flags:Int,
-                     materefind:Int,
-                     SAMRecord: Option[Array[Byte]])
+//case class BDGSAMRecord(sampleId: String,
+//                     contigName:String,
+//                     start:Int,
+//                     end:Int,
+//                     cigar:String,
+//                     mapq:Int,
+//                     baseq: String,
+//                     sequence:String,
+//                     flags:Int,
+//                     materefind:Int,
+//                     SAMRecord: Option[Array[Byte]])
 
 
 trait BDGAlignFileReaderWriter [T <: BDGAlignInputFormat]{
 
-
-
-//  val bdgSerialize = new BDGSerializer()
-  //val serializer = new BDGFastSerializer()
   val confMap = new mutable.HashMap[String,String]()
-  val columnNames = Array(
-    Columns.SAMPLE,
-    Columns.CONTIG,
-    Columns.START,
-    Columns.END,
-    Columns.CIGAR,
-    Columns.MAPQ,
-    Columns.BASEQ,
-    Columns.SEQUENCE,
-    Columns.FLAGS,
-    Columns.MATEREFIND,
-    Columns.SAMRECORD
-  )
 
   def setLocalConf(@transient sqlContext: SQLContext) = {
 
@@ -218,66 +201,20 @@ trait BDGAlignFileReaderWriter [T <: BDGAlignInputFormat]{
 
   }
 
-  def saveAsBAMFile(sqlContext: SQLContext, rdd:RDD[SAMRecord], path:String, headerPath:String) = {
-
-
-//    val header = rdd.first().getHeader
-//    val bdgSerializer = new BDGSerializer(header)
-    val nullPathString = "/tmp/null.bam"
-    //Fix for Spark saveAsNewHadoopfile
-    val hdfs = FileSystem.get(sqlContext.sparkContext.hadoopConfiguration)
-    val nullPath = new org.apache.hadoop.fs.Path(nullPathString)
-    if(hdfs.exists(nullPath)) hdfs.delete(nullPath,true)
-
-
-    sqlContext
-      .sparkContext
-      .hadoopConfiguration
-      .set(InternalParams.BAMCTASHeaderPath,headerPath)
-
-    sqlContext
-      .sparkContext
-      .hadoopConfiguration
-      .set(InternalParams.BAMCTASOutputPath,path)
-
-    try {
-      rdd
-        .map(r => (NullWritable.get(),  {val record = new SAMRecordWritable();record.set(r);record}) )
-        .saveAsNewAPIHadoopFile[BAMOutputFormat[NullWritable]](nullPathString)
-    }
-    finally {
-      sqlContext
-        .sparkContext
-        .hadoopConfiguration
-        .unset(InternalParams.BAMCTASHeaderPath)
-      sqlContext
-        .sparkContext
-        .hadoopConfiguration
-        .unset(InternalParams.BAMCTASOutputPath)
-      sqlContext.setConf(InternalParams.BAMCTASCmd,"false")
-    }
-
-
-  }
 
   private def getValueFromColumn(colName:String, r:SAMRecord, sampleId:String, serializer: FastSerializer, ctasCmd : Boolean): Any = {
 
 
 
-
-    if(colName == columnNames(0)) sampleId
-    else if (colName == columnNames(1)) r.getContig
-    else if (colName == columnNames(2)) r.getStart
-    else if (colName == columnNames(3)) r.getEnd
-    else if (colName == columnNames(4)) r.getCigar.toString
-    else if (colName == columnNames(5)) r.getMappingQuality
-    else if (colName == columnNames(6)) r.getBaseQualityString
-    else if (colName == columnNames(7)) r.getReadString
-    else if (colName == columnNames(8)) r.getFlags
-    else if (colName == columnNames(9)) r.getMateReferenceIndex
-    else if (colName == columnNames(10)) if(ctasCmd)
-        serializer.fst.asByteArray(r)
-      else None
+    if(colName == Columns.SAMPLE) sampleId
+    else if (colName == Columns.CONTIG) r.getContig
+    else if (colName == Columns.START) r.getStart
+    else if (colName == Columns.END) r.getEnd
+    else if (colName == Columns.CIGAR) r.getCigar.toString
+    else if (colName == Columns.MAPQ) r.getMappingQuality
+    else if (colName == Columns.BASEQ) r.getBaseQualityString
+    else if (colName == Columns.SEQUENCE) r.getReadString
+    else if (colName == Columns.FLAGS) r.getFlags
     else throw new Exception("Unknown column")
 
   }
@@ -287,9 +224,7 @@ trait BDGAlignFileReaderWriter [T <: BDGAlignInputFormat]{
 
 class BDGAlignmentRelation[T <:BDGAlignInputFormat](path:String, refPath:Option[String] = None)(@transient val sqlContext: SQLContext)(implicit c: ClassTag[T])
   extends BaseRelation
-    with InsertableRelation
     with PrunedFilteredScan
-    //with CatalystScan
     with Serializable
     with BDGAlignFileReaderWriter[T] {
 
@@ -316,50 +251,12 @@ class BDGAlignmentRelation[T <:BDGAlignInputFormat](path:String, refPath:Option[
     case _ => None
   }
 
-  override def schema: org.apache.spark.sql.types.StructType = {
-    StructType(
-      Seq(
-        new StructField(columnNames(0), StringType),
-        new StructField(columnNames(1), StringType),
-        new StructField(columnNames(2), IntegerType),
-        new StructField(columnNames(3), IntegerType),
-        new StructField(columnNames(4), StringType),
-        new StructField(columnNames(5), IntegerType),
-        new StructField(columnNames(6), StringType),
-        new StructField(columnNames(7), StringType),
-        new StructField(columnNames(8), IntegerType),
-        new StructField(columnNames(9), IntegerType),
-        new StructField(columnNames(10), BinaryType)
-      )
-    )
-  }
+  override def schema: org.apache.spark.sql.types.StructType = Encoders.product[Alignment].schema
+
 
   override def buildScan(requiredColumns:Array[String], filters:Array[Filter]): RDD[Row] = {
 
-    val logger = Logger.getLogger(this.getClass.getCanonicalName)
-
-    //optimization if only sampleId column is referenced, does not work for count(*) so rolling back
-/*  if(requiredColumns.length == 1 && (requiredColumns.head.toLowerCase == "sampleid"
-    || requiredColumns.head.toLowerCase == "sample_id")){
-
-    val fs = FileSystem.get(spark.sparkContext.hadoopConfiguration)
-    val statuses = fs.globStatus(new org.apache.hadoop.fs.Path(path))
-    logger.warn("Only sampleId column is referenced, skipping BAM files reading.")
-    statuses.foreach(r=>println(r.getPath.toString))
-    spark
-      .sparkContext
-      .parallelize(
-      statuses
-        .map(r=>
-          Row.fromSeq(Seq(r.getPath
-          .toString
-          .split('/')
-          .takeRight(1)(0)
-            .split('.')(0)) )
-    )
-   )
-  }*/
-    //else {
+      val logger = Logger.getLogger(this.getClass.getCanonicalName)
       val samples = ArrayBuffer[String]()
 
       val gRanges = ArrayBuffer[String]()
@@ -371,39 +268,39 @@ class BDGAlignmentRelation[T <:BDGAlignInputFormat](path:String, refPath:Option[
       filters.foreach(f => {
         f match {
           case EqualTo(attr, value) => {
-            if (attr.toLowerCase == "sampleid" || attr.toLowerCase == "sample_id")
+            if (attr.equalsIgnoreCase(Columns.SAMPLE))
               samples += value.toString
           }
-            if (attr.toLowerCase == "contigname") contigName = value.toString
-            if (attr.toLowerCase == "start" || attr.toLowerCase() == "end") { //handle predicate contigName='chr1' AND start=2345
+            if (attr.equalsIgnoreCase(Columns.CONTIG) ) contigName = value.toString
+            if (attr.equalsIgnoreCase(Columns.START) || attr.equalsIgnoreCase(Columns.END) ) { //handle predicate contigName='chr1' AND start=2345
               pos = value.asInstanceOf[Int]
             }
           case In(attr, values) => {
-            if (attr.toLowerCase == "sampleid" || attr.toLowerCase == "sample_id") {
+            if (attr.equalsIgnoreCase(Columns.SAMPLE) ) {
               values.foreach(s => samples += s.toString) //FIXME: add handing multiple values for intervals
             }
           }
 
           case LessThanOrEqual(attr, value) => {
-            if (attr.toLowerCase == "start" || attr.toLowerCase == "end") {
+            if (attr.equalsIgnoreCase(Columns.START) || attr.equalsIgnoreCase(Columns.END) ) {
               endPos = value.asInstanceOf[Int]
             }
           }
 
           case LessThan(attr, value) => {
-            if (attr.toLowerCase == "start" || attr.toLowerCase == "end") {
+            if (attr.equalsIgnoreCase(Columns.START) ||  attr.equalsIgnoreCase(Columns.END) ) {
               endPos = value.asInstanceOf[Int]
             }
           }
 
           case GreaterThanOrEqual(attr, value) => {
-            if (attr.toLowerCase == "start" || attr.toLowerCase == "end") {
+            if (attr.equalsIgnoreCase(Columns.START) ||  attr.equalsIgnoreCase(Columns.END) ) {
               startPos = value.asInstanceOf[Int]
             }
 
           }
           case GreaterThan(attr, value) => {
-            if (attr.toLowerCase == "start" || attr.toLowerCase == "end") {
+            if (attr.equalsIgnoreCase(Columns.START) ||  attr.equalsIgnoreCase(Columns.END) ) {
               startPos = value.asInstanceOf[Int]
             }
           }
@@ -460,45 +357,5 @@ class BDGAlignmentRelation[T <:BDGAlignInputFormat](path:String, refPath:Option[
       .map(r=>Row.fromSeq(Seq(r)) )
   }
 
-  override  def insert(data: DataFrame,overwrite:Boolean) = ???
-
-  def insertWithHeader(data:DataFrame, overwrite:Boolean, srcTable:String) = {
-
-    sqlContext.setConf(InternalParams.BAMCTASCmd,"true")
-    import spark.implicits._
-
-    val ds = data
-      .as[BDGSAMRecord]
-    val sampleName = ds.first().sampleId
-    val outPathString = s"${path.split('/').dropRight(1).mkString("/")}/${sampleName}.bam"
-
-    val outPath = new org.apache.hadoop.fs.Path(outPathString)
-    val hdfs = FileSystem.get(spark.sparkContext.hadoopConfiguration)
-    var fos:FSDataOutputStream  = null
-
-    if (hdfs.exists(outPath) && overwrite) {
-      hdfs.delete(outPath,true)
-      fos = hdfs.create(outPath)
-    }
-    else if(!hdfs.exists(outPath)) { //
-      fos = hdfs.create(outPath)
-    }
-    else
-      throw new Exception(s"Path: ${outPathString} already exits and saveMode is not ${SaveMode.Overwrite}")
-
-    fos.close()
-
-   lazy val srcBAMRDD =
-      ds
-        .rdd
-        .mapPartitions(p =>{
-          val bdgSerializer = new FastSerializer()
-          p.map( r => bdgSerializer.fst.asObject(r.SAMRecord.get).asInstanceOf[SAMRecord] )
-        })
-
-    val samplePath = s"${TableFuncs.getTableDirectory(spark,srcTable)}/${sampleName}*.bam"
-    val headerPath = TableFuncs.getExactSamplePath(spark,samplePath)
-    saveAsBAMFile(spark.sqlContext,srcBAMRDD,outPathString,headerPath)
-  }
 
 }

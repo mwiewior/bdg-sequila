@@ -68,26 +68,9 @@ class BAMADAMDataSourceTestSuite
     spark
       .sql(
         s"SELECT ${Columns.CONTIG}, ${Columns.START}, ${Columns.END} FROM $tableNameBAM limit 1")
-      .show()
+      .printSchema()
   }
 
-  test("BAM - select * limit - skipping SAMRecord") {
-
-    assert(
-      spark
-        .sql(s"SELECT ${Columns.SAMRECORD} FROM $tableNameBAM limit 1")
-        .first()
-        .get(0) === null)
-
-    sqlContext.setConf(InternalParams.BAMCTASCmd, "true")
-
-    assert(
-      spark
-        .sql(s"SELECT ${Columns.SAMRECORD} FROM $tableNameBAM limit 1")
-        .first()
-        .get(0) != null)
-    sqlContext.setConf(InternalParams.BAMCTASCmd, "false")
-  }
 
   test("BAM - Row count ADAMDataSource2") {
     assert(
