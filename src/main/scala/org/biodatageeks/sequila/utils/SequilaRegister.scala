@@ -1,5 +1,6 @@
 package org.biodatageeks.sequila.utils
 
+import htsjdk.samtools.ValidationStringency
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.execution.datasources.SequilaDataSourceStrategy
 import org.biodatageeks.sequila.utvf.GenomicIntervalStrategy
@@ -22,9 +23,14 @@ object SequilaRegister {
       .sparkContext
       .hadoopConfiguration
       .setInt("mapred.max.split.size", spark.sqlContext.getConf(InternalParams.InputSplitSize,"134217728").toInt)
+
     spark
       .sqlContext
       .setConf(InternalParams.IOReadAlignmentMethod,"hadoopBAM")
+
+    spark
+      .sqlContext
+      .setConf(InternalParams.BAMValidationStringency, ValidationStringency.LENIENT.toString)
   }
 
 }

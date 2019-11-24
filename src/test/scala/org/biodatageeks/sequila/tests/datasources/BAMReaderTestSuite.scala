@@ -31,7 +31,7 @@ class BAMReaderTestSuite
     ss.sqlContext.setConf("spark.biodatageeks.bam.predicatePushdown", "false")
 
     val query = s"""
-                       |SELECT * FROM reads WHERE ${Columns.CONTIG}='chr1' AND ${Columns.START}=20138
+                       |SELECT * FROM reads WHERE ${Columns.CONTIG}='1' AND ${Columns.START}=20138
                      """.stripMargin
     val withoutPPDF = ss.sql(query).collect()
 
@@ -53,7 +53,7 @@ class BAMReaderTestSuite
     SequilaRegister.register(ss)
     ss.sqlContext.setConf("spark.biodatageeks.bam.predicatePushdown", "false")
     val query = s"""
-                   |SELECT * FROM reads WHERE ${Columns.CONTIG}='chr1' AND ${Columns.START} >= 1996 AND ${Columns.END} <= 2071
+                   |SELECT * FROM reads WHERE ${Columns.CONTIG}='1' AND ${Columns.START} >= 1996 AND ${Columns.END} <= 2071
                  """.stripMargin
     val withoutPPDF = ss.sql(query).collect()
 

@@ -11,7 +11,7 @@ import org.seqdoop.hadoop_bam.BAMBDGInputFormat
 class BAMDataSource extends DataSourceRegister
   with RelationProvider
   with BDGAlignFileReaderWriter[BAMBDGInputFormat] {
-  override def shortName(): String = "BAM"
+  override def shortName(): String = "bam"
 
   override def createRelation(sqlContext: SQLContext,
                               parameters: Map[String, String]): BaseRelation = {

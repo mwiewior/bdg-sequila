@@ -19,7 +19,7 @@
         "doc": "bitwise FLAG"
     },
     {
-        "name": "rname",
+        "name": "contig",
         "type": "string",
         "doc": "Reference sequence NAME"
     },

@@ -66,9 +66,9 @@ class MultisampleBAMTestSuite
         |  reads.${Columns.START} <= targets.${Columns.END}
         |)
         |GROUP BY ${Columns.SAMPLE}, targets.${Columns.CONTIG}, targets.${Columns.START}, targets.${Columns.END}
-        |HAVING ${Columns.CONTIG}='chr1' AND  ${Columns.START}=20138 AND  ${Columns.END}=20294 and ${Columns.SAMPLE}='NA12878'""".stripMargin
+        |HAVING ${Columns.CONTIG}='1' AND  ${Columns.START}=20138 AND  ${Columns.END}=20294 and ${Columns.SAMPLE}='NA12878'""".stripMargin
     val targets = spark.sqlContext
-      .createDataFrame(Array(Region("chr1", 20138, 20294)))
+      .createDataFrame(Array(Region("1", 20138, 20294)))
     targets
       .createOrReplaceTempView("targets")
     assert(spark.sql(query).first().getLong(1) === 1484L)
@@ -88,7 +88,7 @@ class MultisampleBAMTestSuite
       """.stripMargin
 
     val targets = ss.sqlContext
-      .createDataFrame(Array(Gene("chr1", 20138, 20294, "TestGene", "+")))
+      .createDataFrame(Array(Gene("1", 20138, 20294, "TestGene", "+")))
     targets
       .createOrReplaceTempView("targets")
 
@@ -102,7 +102,7 @@ class MultisampleBAMTestSuite
       s"""
         |SELECT ${Columns.SAMPLE}, ${Columns.START}, ${Columns.CIGAR}
         |FROM reads
-        |WHERE ${Columns.SAMPLE}='NA12879' AND ${Columns.CONTIG}='chr1'
+        |WHERE ${Columns.SAMPLE}='NA12879' AND ${Columns.CONTIG}='1'
         |LIMIT 5
       """.stripMargin
 

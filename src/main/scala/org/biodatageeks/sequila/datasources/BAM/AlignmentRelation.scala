@@ -1,18 +1,13 @@
 package org.biodatageeks.sequila.datasources.BAM
 
-import java.net.URI
 
 import htsjdk.samtools.{SAMRecord, ValidationStringency}
-import org.apache.hadoop.fs.{FSDataOutputStream, FileSystem}
-import org.apache.hadoop.io.{LongWritable, NullWritable}
+import org.apache.hadoop.io.{LongWritable}
 import org.apache.hadoop.mapreduce.lib.input.FileSplit
 import org.apache.log4j.Logger
-import org.apache.spark.SparkContext
 import org.apache.spark.rdd.{NewHadoopRDD, RDD}
-import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression}
 import org.apache.spark.sql._
 import org.apache.spark.sql.sources._
-import org.apache.spark.sql.types._
 import org.biodatageeks.sequila.inputformats.BDGAlignInputFormat
 import org.seqdoop.hadoop_bam.util.SAMHeaderReader
 import org.seqdoop.hadoop_bam._
@@ -20,24 +15,9 @@ import org.seqdoop.hadoop_bam._
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 import scala.reflect.ClassTag
-import org.apache.spark.rdd.PairRDDFunctions
-import org.biodatageeks.sequila.outputformats.BAMOutputFormat
-import org.biodatageeks.sequila.utils.{Columns, FastSerializer, InternalParams, TableFuncs}
 
+import org.biodatageeks.sequila.utils.{Columns, DataQualityFuncs, FastSerializer, InternalParams, TableFuncs}
 import org.biodatageeks.formats.Alignment
-
-//case class BDGSAMRecord(sampleId: String,
-//                     contigName:String,
-//                     start:Int,
-//                     end:Int,
-//                     cigar:String,
-//                     mapq:Int,
-//                     baseq: String,
-//                     sequence:String,
-//                     flags:Int,
-//                     materefind:Int,
-//                     SAMRecord: Option[Array[Byte]])
-
 
 trait BDGAlignFileReaderWriter [T <: BDGAlignInputFormat]{
 
@@ -75,7 +55,7 @@ trait BDGAlignFileReaderWriter [T <: BDGAlignInputFormat]{
         spark
           .sparkContext
           .hadoopConfiguration
-          .set("hadoopbam.bam.intervals", s)
+          .set("hadoopbam.bam.intervals", s"chr${s}")
         else
           spark
             .sparkContext
@@ -128,11 +108,24 @@ trait BDGAlignFileReaderWriter [T <: BDGAlignInputFormat]{
       case "disq" => {
         import org.disq_bio.disq.HtsjdkReadsRddStorage
 
+
+          val validationStringencyOptLenient = ValidationStringency.LENIENT.toString
+          val validationStringencyOptSilent = ValidationStringency.SILENT.toString
+          val validationStringencyOptStrict = ValidationStringency.STRICT.toString
+
+        val validationStringency =  spark.sqlContext.getConf(InternalParams.BAMValidationStringency) match {
+          case `validationStringencyOptLenient`  => ValidationStringency.LENIENT
+          case `validationStringencyOptSilent`   => ValidationStringency.SILENT
+          case `validationStringencyOptStrict`   => ValidationStringency.STRICT
+          case _ => throw new Exception(s"Unknown validation stringency ${spark.sqlContext.getConf(InternalParams.BAMValidationStringency)}")
+        }
+
+
         refPath match {
           case Some(ref) => {
           HtsjdkReadsRddStorage
             .makeDefault(sqlContext.sparkContext)
-            .validationStringency(ValidationStringency.LENIENT)
+            .validationStringency(validationStringency)
             .referenceSourcePath(ref)
             .read(resolvedPath)
             .getReads
@@ -141,7 +134,7 @@ trait BDGAlignFileReaderWriter [T <: BDGAlignInputFormat]{
           case None => {
             HtsjdkReadsRddStorage
               .makeDefault(sqlContext.sparkContext)
-              .validationStringency(ValidationStringency.LENIENT)
+              .validationStringency(validationStringency)
               .read(resolvedPath)
               .getReads
               .rdd
@@ -205,17 +198,24 @@ trait BDGAlignFileReaderWriter [T <: BDGAlignInputFormat]{
   private def getValueFromColumn(colName:String, r:SAMRecord, sampleId:String, serializer: FastSerializer, ctasCmd : Boolean): Any = {
 
 
-
-    if(colName == Columns.SAMPLE) sampleId
-    else if (colName == Columns.CONTIG) r.getContig
-    else if (colName == Columns.START) r.getStart
-    else if (colName == Columns.END) r.getEnd
-    else if (colName == Columns.CIGAR) r.getCigar.toString
-    else if (colName == Columns.MAPQ) r.getMappingQuality
-    else if (colName == Columns.BASEQ) r.getBaseQualityString
-    else if (colName == Columns.SEQUENCE) r.getReadString
-    else if (colName == Columns.FLAGS) r.getFlags
-    else throw new Exception("Unknown column")
+    colName match {
+      case Columns.SAMPLE =>    sampleId
+      case Columns.CONTIG =>    DataQualityFuncs.cleanContig(r.getContig)
+      case Columns.START  =>    r.getStart
+      case Columns.END    =>    r.getEnd
+      case Columns.CIGAR  =>    r.getCigar.toString
+      case Columns.MAPQ   =>    r.getMappingQuality
+      case Columns.BASEQ  =>    r.getBaseQualityString
+      case Columns.SEQUENCE =>  r.getReadString
+      case Columns.FLAGS  =>    r.getFlags
+      case Columns.QNAME  =>    r.getReadName
+      case Columns.POS    =>    r.getStart
+      case Columns.RNEXT  =>    DataQualityFuncs.cleanContig(r.getMateReferenceName) //FIXME: to check if the mapping is correct
+      case Columns.PNEXT  =>    r.getMateAlignmentStart //FIXME: to check if the mapping is correct
+      case Columns.TLEN   =>    r.getLengthOnReference //FIXME: to check if the mapping is correct
+      case Columns.TAG    =>    null
+      case _              =>    throw new Exception(s"Unknown column found: ${colName}")
+    }
 
   }
 
@@ -238,7 +238,7 @@ class BDGAlignmentRelation[T <:BDGAlignInputFormat](path:String, refPath:Option[
   spark
     .sparkContext
     .hadoopConfiguration
-    .set(SAMHeaderReader.VALIDATION_STRINGENCY_PROPERTY, ValidationStringency.SILENT.toString)
+    .set(SAMHeaderReader.VALIDATION_STRINGENCY_PROPERTY, InternalParams.BAMValidationStringency)
 
   //CRAM reference file
   refPath match {
@@ -338,9 +338,10 @@ class BDGAlignmentRelation[T <:BDGAlignInputFormat](path:String, refPath:Option[
       }
       if (prunedPaths != path) logger.warn(s"Partition pruning detected, reading only files for samples: ${samples.mkString(",")}")
 
-      logger.warn(s"GRanges: ${gRanges.mkString(",")}, ${spark.sqlContext.getConf("spark.biodatageeks.bam.predicatePushdown", "false")}")
+    //FIXME: Currently only rname with chr prefix is assumed is added in the runtime, may cause issues in BAMs with differnt prefix!
+      logger.info(s"GRanges: ${gRanges.mkString(",")}, ${spark.sqlContext.getConf("spark.biodatageeks.bam.predicatePushdown", "false")}")
       if (gRanges.length > 0 && spark.sqlContext.getConf("spark.biodatageeks.bam.predicatePushdown", "false").toBoolean) {
-        logger.warn(s"Interval query detected and predicate pushdown enabled, trying to do predicate pushdown using intervals ${gRanges.mkString("|")}")
+        logger.info(s"Interval query detected and predicate pushdown enabled, trying to do predicate pushdown using intervals ${gRanges.mkString("|")}")
         setConf("spark.biodatageeks.bam.intervals", gRanges.mkString(","))
       }
       else

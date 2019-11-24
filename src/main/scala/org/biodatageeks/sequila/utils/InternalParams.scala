@@ -29,4 +29,6 @@ object InternalParams {
   /*Intel GKL support */
   final val UseIntelGKL = "spark.biodatageeks.bam.useGKLInflate"
 
+  final val BAMValidationStringency = "spark.biodatageeks.bam.validation"
+
 }
