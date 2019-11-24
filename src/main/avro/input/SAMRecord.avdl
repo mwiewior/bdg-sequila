@@ -1,0 +1,8 @@
+@namespace("org.biodatageeks.formats")
+
+protocol AlignmentInterface {
+  record Alignment {
+    string sampleName;
+    string contigName;
+  }
+}

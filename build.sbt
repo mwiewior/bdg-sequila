@@ -67,6 +67,16 @@ libraryDependencies += "org.disq-bio" % "disq" % "0.3.3"
 
 libraryDependencies += "com.lifeomic" % "spark-vcf" % "0.3.2"
 
+libraryDependencies += "org.scala-lang.modules" % "scala-java8-compat_2.11" % "0.9.0"
+
+
+avroSpecificSourceDirectories in Compile += (sourceDirectory in Compile).value / "avro/input"
+
+sourceGenerators in Compile += (avroScalaGenerate in Compile).taskValue
+watchSources ++= ((avroSpecificSourceDirectories in Compile).value ** "*.avdl").get
+
+avroSpecificScalaSource in Compile := new java.io.File("src/main/org/biodatageeks/formats")
+
 
 
 
