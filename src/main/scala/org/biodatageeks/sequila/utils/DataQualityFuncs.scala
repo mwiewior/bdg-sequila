@@ -9,8 +9,9 @@ object DataQualityFuncs {
   def cleanContig (contig : String) = {
     if(contig != null)
     contig
-      .replaceFirst("(?i)chrM", "chrMT")
-      .replaceFirst("(?i)chr","")
+      .replaceFirst("^(?i)chrM$", "chrMT")
+      .replaceFirst("^(?i)chr","")
+      .replaceFirst("^M$", "MT")
     else
       contig
   }
