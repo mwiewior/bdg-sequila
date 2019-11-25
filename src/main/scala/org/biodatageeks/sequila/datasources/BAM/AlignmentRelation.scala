@@ -16,7 +16,7 @@ import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 import scala.reflect.ClassTag
 import org.biodatageeks.sequila.utils.{Columns, DataQualityFuncs, FastSerializer, InternalParams, ScalaFuncs, TableFuncs}
-import org.biodatageeks.formats.{Alignment, Tag}
+import org.biodatageeks.formats.{Alignment}
 import scala.reflect.runtime.universe._
 
 
@@ -270,7 +270,7 @@ class BDGAlignmentRelation[T <:BDGAlignInputFormat](path:String, refPath:Option[
 
       val logger = Logger.getLogger(this.getClass.getCanonicalName)
       val samples = ArrayBuffer[String]()
-
+      logger.info(s"Got filter: ${filters.mkString("|")}")
       val gRanges = ArrayBuffer[String]()
       var contigName: String = ""
       var startPos = 0

@@ -4,7 +4,7 @@
 "namespace": "org.biodatageeks.formats",
 "fields": [
     {
-        "name": "sample",
+        "name": "sample_id",
         "type": "string",
         "doc": "SAMPLE name"
     },
@@ -29,12 +29,12 @@
         "doc": "1-based leftmost mapping POSition"
     },
     {
-        "name": "start",
+        "name": "pos_start",
         "type": "int",
         "doc": "1-based leftmost mapping POSition of a read"
     },
     {
-        "name": "end",
+        "name": "pos_end",
         "type": "int",
         "doc": "1-based rightmost mapping POSition of a read"
     },

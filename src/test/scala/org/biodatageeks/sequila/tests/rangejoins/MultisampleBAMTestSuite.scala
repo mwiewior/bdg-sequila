@@ -12,6 +12,8 @@ import org.bdgenomics.utils.instrumentation.{
 import org.biodatageeks.sequila.rangejoins.IntervalTree.IntervalTreeJoinStrategyOptim
 import org.biodatageeks.sequila.utils.Columns
 import org.scalatest.{BeforeAndAfter, FunSuite}
+import org.biodatageeks.formats.{Gene,Region}
+
 
 class MultisampleBAMTestSuite
     extends FunSuite
@@ -78,13 +80,13 @@ class MultisampleBAMTestSuite
     val ss = SequilaSession(spark)
     val query =
       s"""
-        |SELECT targets.GeneId as GeneId, targets.${Columns.CONTIG} as Chr,
+        |SELECT targets.gene_id as GeneId, targets.${Columns.CONTIG} as Chr,
         |targets.${Columns.START} as Start, targets.${Columns.END} as End, targets.${Columns.STRAND} as Strand,
         |count(*) as Counts
         |FROM targets JOIN reads on
         |(targets.${Columns.CONTIG} = reads.${Columns.CONTIG}  AND CAST(reads.${Columns.END} as Integer) >= CAST(targets.${Columns.START} as Integer)
         |AND CAST(reads.${Columns.START} as Integer) <= CAST(targets.${Columns.END} as Integer) )
-        |GROUP BY targets.GeneId, targets.${Columns.CONTIG}, targets.${Columns.START}, targets.${Columns.END}, targets.${Columns.STRAND}
+        |GROUP BY targets.gene_id, targets.${Columns.CONTIG}, targets.${Columns.START}, targets.${Columns.END}, targets.${Columns.STRAND}
       """.stripMargin
 
     val targets = ss.sqlContext

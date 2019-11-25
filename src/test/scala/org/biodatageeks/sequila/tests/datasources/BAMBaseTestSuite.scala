@@ -48,4 +48,17 @@ class BAMBaseTestSuite
 
   }
 
+  test("TEST query with LIMIT optimization"){
+    val ss = SequilaSession(spark)
+    SequilaRegister.register(ss)
+    ss.sparkContext.setLogLevel("INFO")
+    val sqlText =  s"SELECT * FROM $tableNameBAM LIMIT 10"
+    ss
+      .sql(sqlText)
+      .show
+
+    ss.sql(sqlText).explain(true)
+
+  }
+
 }

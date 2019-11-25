@@ -5,9 +5,11 @@ import java.io.{OutputStreamWriter, PrintWriter}
 import com.holdenkarau.spark.testing.{DataFrameSuiteBase, SharedSparkContext}
 import org.apache.log4j.Logger
 import org.bdgenomics.utils.instrumentation.{Metrics, MetricsListener, RecordedMetrics}
-import org.biodatageeks.sequila.tests.rangejoins.Region
+
 import org.biodatageeks.sequila.utils.{Columns, InternalParams}
 import org.scalatest.{BeforeAndAfter, FunSuite}
+
+import org.biodatageeks.formats.Region
 
 class BAMADAMDataSourceTestSuite
     extends FunSuite

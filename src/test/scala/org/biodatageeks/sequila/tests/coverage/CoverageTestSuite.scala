@@ -113,12 +113,12 @@ class CoverageTestSuite
           .getFloat(3) == 1.5522388.toFloat) //value check [partition boundary]
       assert(
         bdg
-          .where(s"${Columns.CONTIG} == 'M' and ${Columns.START} == 7800")
+          .where(s"${Columns.CONTIG} == 'MT' and ${Columns.START} == 7800")
           .first()
           .getFloat(3) == 253.03001.toFloat) //value check [partition boundary]
       assert(
         bdg
-          .where(s"${Columns.CONTIG} == 'M' and ${Columns.START} == 14400")
+          .where(s"${Columns.CONTIG} == 'MT' and ${Columns.START} == 14400")
           .first()
           .getFloat(3) == 134.7.toFloat) //value check [partition boundary]
       assert(
@@ -155,41 +155,41 @@ class CoverageTestSuite
           .getShort(3) == 2) // value check
       assert(
         bdg
-          .where(s"${Columns.CONTIG}='M' and ${Columns.START} == 7")
+          .where(s"${Columns.CONTIG}='MT' and ${Columns.START} == 7")
           .first()
           .getShort(3) == 1) // value check [partition boundary]
       assert(
         bdg
-          .where(s"${Columns.CONTIG}='M' and ${Columns.START} == 7881")
+          .where(s"${Columns.CONTIG}='MT' and ${Columns.START} == 7881")
           .first()
           .getShort(3) == 248) // value check [partition boundary]
       assert(
         bdg
-          .where(s"${Columns.CONTIG}='M' and ${Columns.START} == 7882")
+          .where(s"${Columns.CONTIG}='MT' and ${Columns.START} == 7882")
           .first()
           .getShort(3) == 247) // value check [partition boundary]
       assert(
         bdg
-          .where(s"${Columns.CONTIG}='M' and ${Columns.START} == 7883")
+          .where(s"${Columns.CONTIG}='MT' and ${Columns.START} == 7883")
           .first()
           .getShort(3) == 246) // value check [partition boundary]
       assert(
         bdg
-          .where(s"${Columns.CONTIG}='M' and ${Columns.START} == 14402")
+          .where(s"${Columns.CONTIG}='MT' and ${Columns.START} == 14402")
           .first()
           .getShort(3) == 182) // value check [partition boundary]
       assert(
         bdg
           .groupBy(s"${Columns.CONTIG}")
-          .max("end")
+          .max(Columns.END)
           .where(s"${Columns.CONTIG} == '1'")
           .first()
           .get(1) == 247249719) // max value check
       assert(
         bdg
           .groupBy(s"${Columns.CONTIG}")
-          .max("end")
-          .where(s"${Columns.CONTIG} == 'M'")
+          .max(Columns.END)
+          .where(s"${Columns.CONTIG} == 'MT'")
           .first()
           .get(1) == 16571) // max value check
       assert(
@@ -225,41 +225,41 @@ class CoverageTestSuite
           .getShort(3) == 2) // value check
       assert(
         bdg
-          .where(s"${Columns.CONTIG}='M' and ${Columns.START} == 7")
+          .where(s"${Columns.CONTIG}='MT' and ${Columns.START} == 7")
           .first()
           .getShort(3) == 1) // value check [partition boundary]
       assert(
         bdg
-          .where(s"${Columns.CONTIG}='M' and ${Columns.START} == 7881")
+          .where(s"${Columns.CONTIG}='MT' and ${Columns.START} == 7881")
           .first()
           .getShort(3) == 248) // value check [partition boundary]
       assert(
         bdg
-          .where(s"${Columns.CONTIG}='M' and ${Columns.START} == 7882")
+          .where(s"${Columns.CONTIG}='MT' and ${Columns.START} == 7882")
           .first()
           .getShort(3) == 247) // value check [partition boundary]
       assert(
         bdg
-          .where(s"${Columns.CONTIG}='M' and ${Columns.START} == 7883")
+          .where(s"${Columns.CONTIG}='MT' and ${Columns.START} == 7883")
           .first()
           .getShort(3) == 246) // value check [partition boundary]
       assert(
         bdg
-          .where(s"${Columns.CONTIG}='M' and ${Columns.START} == 14402")
+          .where(s"${Columns.CONTIG}='MT' and ${Columns.START} == 14402")
           .first()
           .getShort(3) == 182) // value check [partition boundary]
       assert(
         bdg
           .groupBy(s"${Columns.CONTIG}")
-          .max("end")
+          .max(Columns.END)
           .where(s"${Columns.CONTIG} == '1'")
           .first()
           .get(1) == 10066) // max value check
       assert(
         bdg
           .groupBy(s"${Columns.CONTIG}")
-          .max("end")
-          .where(s"${Columns.CONTIG} == 'M'")
+          .max(Columns.END)
+          .where(s"${Columns.CONTIG} == 'MT'")
           .first()
           .get(1) == 16571) // max value check
       assert(
@@ -295,27 +295,27 @@ class CoverageTestSuite
         bdg.where(s"${Columns.CONTIG}='1' and ${Columns.START} == 88").first().getShort(3) == 7)
       assert(
         bdg
-          .where(s"${Columns.CONTIG}='M' and ${Columns.START} == 7")
+          .where(s"${Columns.CONTIG}='MT' and ${Columns.START} == 7")
           .first()
           .getShort(3) == 1) // value check [partition boundary]
       assert(
         bdg
-          .where(s"${Columns.CONTIG}='M' and ${Columns.START} == 7881")
+          .where(s"${Columns.CONTIG}='MT' and ${Columns.START} == 7881")
           .first()
           .getShort(3) == 248) // value check [partition boundary]
       assert(
         bdg
-          .where(s"${Columns.CONTIG}='M' and ${Columns.START} == 7882")
+          .where(s"${Columns.CONTIG}='MT' and ${Columns.START} == 7882")
           .first()
           .getShort(3) == 247) // value check [partition boundary]
       assert(
         bdg
-          .where(s"${Columns.CONTIG}='M' and ${Columns.START} == 7883")
+          .where(s"${Columns.CONTIG}='MT' and ${Columns.START} == 7883")
           .first()
           .getShort(3) == 246) // value check [partition boundary]
       assert(
         bdg
-          .where(s"${Columns.CONTIG}='M' and ${Columns.START} == 14402")
+          .where(s"${Columns.CONTIG}='MT' and ${Columns.START} == 14402")
           .first()
           .getShort(3) == 182) // value check [partition boundary]
       assert(
@@ -329,7 +329,7 @@ class CoverageTestSuite
         bdg
           .groupBy(s"${Columns.CONTIG}")
           .max(s"${Columns.END}")
-          .where(s"${Columns.CONTIG} == 'M'")
+          .where(s"${Columns.CONTIG} == 'MT'")
           .first()
           .get(1) == 16571) // max value check
       assert(

@@ -9,12 +9,13 @@ import org.scalatest.{BeforeAndAfter, FunSuite}
 import org.seqdoop.hadoop_bam.util.SAMHeaderReader
 import org.seqdoop.hadoop_bam.{BAMInputFormat, SAMRecordWritable}
 
-case class Region(contig: String, start: Int, end: Int)
-case class Gene(contig: String,
-                start: Int,
-                end: Int,
-                geneId: String,
-                strand: String)
+import org.biodatageeks.formats.Region
+
+//case class Gene(contig: String,
+//                start: Int,
+//                end: Int,
+//                geneId: String,
+//                strand: String)
 
 class FeatureCountsTestSuite
     extends FunSuite
