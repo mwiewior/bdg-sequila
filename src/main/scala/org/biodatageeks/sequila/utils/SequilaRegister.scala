@@ -16,7 +16,7 @@ object SequilaRegister {
         new IntervalTreeJoinStrategyOptim(spark),
         new CoverageStrategy(spark),
         new GenomicIntervalStrategy(spark)
-       // new BAMCTASStrategy(spark)
+
       )
     /*Set params*/
     spark

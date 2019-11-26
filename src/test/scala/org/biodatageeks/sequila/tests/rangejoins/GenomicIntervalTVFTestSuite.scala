@@ -1,7 +1,7 @@
 package org.biodatageeks.sequila.tests.rangejoins
 
 import org.apache.spark.sql.SequilaSession
-import org.biodatageeks.sequila.tests.datasources.BAMBaseTestSuite
+import org.biodatageeks.sequila.tests.base.BAMBaseTestSuite
 import org.biodatageeks.sequila.utils.{Columns, SequilaRegister}
 
 class GenomicIntervalTVFTestSuite  extends  BAMBaseTestSuite {

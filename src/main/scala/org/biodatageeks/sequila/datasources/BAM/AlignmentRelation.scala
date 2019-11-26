@@ -240,7 +240,7 @@ class BDGAlignmentRelation[T <:BDGAlignInputFormat](path:String, refPath:Option[
     with Serializable
     with BDGAlignFileReaderWriter[T] {
 
-
+  @transient val logger = Logger.getLogger(this.getClass.getCanonicalName)
   val spark = sqlContext
     .sparkSession
   setLocalConf(sqlContext)
@@ -268,8 +268,9 @@ class BDGAlignmentRelation[T <:BDGAlignInputFormat](path:String, refPath:Option[
 
   override def buildScan(requiredColumns:Array[String], filters:Array[Filter]): RDD[Row] = {
 
-      val logger = Logger.getLogger(this.getClass.getCanonicalName)
-      val samples = ArrayBuffer[String]()
+    val logger = Logger.getLogger(this.getClass.getCanonicalName)
+
+    val samples = ArrayBuffer[String]()
       logger.info(s"Got filter: ${filters.mkString("|")}")
       val gRanges = ArrayBuffer[String]()
       var contigName: String = ""
@@ -368,6 +369,14 @@ class BDGAlignmentRelation[T <:BDGAlignInputFormat](path:String, refPath:Option[
       .sparkContext
       .parallelize(TableFuncs.getAllSamples(spark,path))
       .map(r=>Row.fromSeq(Seq(r)) )
+  }
+
+  def buildScanWithLimit(requiredColumns:Array[String], filters:Array[Filter], limit: Int ): RDD[Row] = {
+
+    logger.info(s"################Using optimized SCAN for LIMIT clause")
+    spark
+      .sparkContext
+      .parallelize(buildScan(requiredColumns, filters).take(limit) )
   }
 
 
