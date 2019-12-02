@@ -43,6 +43,7 @@ object Columns {
   final val Y_POS = sequencedFragmentColumns(7)
   final val FILTER_PASSED = sequencedFragmentColumns(8)
   final val CONTROL_NUMBER = sequencedFragmentColumns(9)
+  final val INDEX_SEQUENCE = sequencedFragmentColumns(10)
 
 
 }

@@ -7,7 +7,7 @@ import org.apache.log4j.Logger
 import org.apache.spark.rdd.{NewHadoopRDD, RDD}
 import org.apache.spark.sql.{Encoders, Row, SQLContext}
 import org.apache.spark.sql.sources.{BaseRelation, EqualTo, Filter, GreaterThan, GreaterThanOrEqual, In, LessThan, LessThanOrEqual, PrunedFilteredScan}
-import org.biodatageeks.formats.SequenceFragment
+import org.biodatageeks.formats.SequencedFragment
 import org.biodatageeks.sequila.utils.{Columns, FastSerializer}
 import org.seqdoop.hadoop_bam.{FastqInputFormat, FileVirtualSplit, SequencedFragment}
 
@@ -21,7 +21,7 @@ class SequencedFragmentRelation(path: String)(@transient val sqlContext: SQLCont
   @transient val logger = Logger.getLogger(this.getClass.getCanonicalName)
 
 
-  override def schema: org.apache.spark.sql.types.StructType = Encoders.product[SequenceFragment].schema
+  override def schema: org.apache.spark.sql.types.StructType = Encoders.product[org.biodatageeks.formats.SequencedFragment].schema
 
   override def buildScan(requiredColumns:Array[String], filters:Array[Filter]): RDD[Row] = {
     val samples = ArrayBuffer[String]()
@@ -55,7 +55,7 @@ class SequencedFragmentRelation(path: String)(@transient val sqlContext: SQLCont
     readFASTQFile(sqlContext,prunedPaths,requiredColumns)
   }
 
-  private def getValueFromColumn(colName:String, r:SequencedFragment, sampleId:String): Any = {
+  private def getValueFromColumn(colName:String, r:org.seqdoop.hadoop_bam.SequencedFragment, sampleId:String): Any = {
     colName match {
       case Columns.SAMPLE               => sampleId
       case Columns.BASEQ                => r.getQuality.toString
@@ -69,6 +69,7 @@ class SequencedFragmentRelation(path: String)(@transient val sqlContext: SQLCont
       case Columns.Y_POS                => r.getYpos
       case Columns.FILTER_PASSED        => r.getFilterPassed
       case Columns.CONTROL_NUMBER       => r.getControlNumber
+      case Columns.INDEX_SEQUENCE       => r.getIndexSequence
       case _              =>    throw new Exception(s"Unknown column found: ${colName}")
     }
   }
@@ -78,9 +79,9 @@ class SequencedFragmentRelation(path: String)(@transient val sqlContext: SQLCont
       .sparkSession
     lazy val sequenceFragments = spark
       .sparkContext
-      .newAPIHadoopFile[Text,SequencedFragment, FastqInputFormat](path)
+      .newAPIHadoopFile[Text,org.seqdoop.hadoop_bam.SequencedFragment, FastqInputFormat](path)
 
-    lazy val sequenceFragmentsWithFilename = sequenceFragments.asInstanceOf[NewHadoopRDD[FastqInputFormat, SequencedFragment]]
+    lazy val sequenceFragmentsWithFilename = sequenceFragments.asInstanceOf[NewHadoopRDD[FastqInputFormat, org.seqdoop.hadoop_bam.SequencedFragment]]
       .mapPartitionsWithInputSplit((inputSplit, iterator) => {
         if (inputSplit.isInstanceOf[FileVirtualSplit]) {
           val file =inputSplit.asInstanceOf[FileVirtualSplit]
