@@ -1,6 +1,6 @@
 package org.biodatageeks.sequila.utils
 
-import org.biodatageeks.formats.Alignment
+import org.biodatageeks.formats.{Alignment, SequencedFragment}
 
 
 object Columns {
@@ -29,5 +29,20 @@ object Columns {
   final val SAMRECORD = "SAMRecord"
   final val STRAND = "strand"
   final val COVERAGE= "coverage"
+
+  private val sequencedFragmentColumns = ScalaFuncs
+    .classAccessors[SequencedFragment]
+    .map(_.name.toString)
+
+  final val INSTRUMENT_NAME = sequencedFragmentColumns(1)
+  final val RUN_ID = sequencedFragmentColumns(2)
+  final val FLOWCELL_ID = sequencedFragmentColumns(3)
+  final val FLOWCELL_LANE = sequencedFragmentColumns(4)
+  final val TILE = sequencedFragmentColumns(5)
+  final val X_POS = sequencedFragmentColumns(6)
+  final val Y_POS = sequencedFragmentColumns(7)
+  final val FILTER_PASSED = sequencedFragmentColumns(8)
+  final val CONTROL_NUMBER = sequencedFragmentColumns(9)
+
 
 }
