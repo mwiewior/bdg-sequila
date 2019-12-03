@@ -1,15 +1,13 @@
-package org.biodatageeks.sequila.datasources.FASTQ
+package org.biodatageeks.sequila.datasources.BED
 
 import org.apache.spark.sql.SQLContext
 import org.apache.spark.sql.sources.{BaseRelation, DataSourceRegister, RelationProvider}
 
-
-class FASTQDataSource extends DataSourceRegister with RelationProvider {
-  override def shortName(): String = "fastq"
+class BEDDataSource  extends DataSourceRegister with RelationProvider {
+  override def shortName(): String = "bed"
 
   override def createRelation(sqlContext: SQLContext,
                               parameters: Map[String, String]): BaseRelation = {
-    new SequencedFragmentRelation(parameters("path"))(sqlContext)
+    new BEDRelation(parameters("path"))(sqlContext)
   }
-
 }

@@ -1,6 +1,6 @@
 package org.biodatageeks.sequila.utils
 
-import org.biodatageeks.formats.{Alignment, SequencedFragment}
+import org.biodatageeks.formats.{Alignment, BrowserExtensibleData, SequencedFragment}
 
 
 object Columns {
@@ -44,6 +44,23 @@ object Columns {
   final val FILTER_PASSED = sequencedFragmentColumns(8)
   final val CONTROL_NUMBER = sequencedFragmentColumns(9)
   final val INDEX_SEQUENCE = sequencedFragmentColumns(10)
+
+
+  private val BEDColumns = ScalaFuncs
+    .classAccessors[BrowserExtensibleData]
+    .map(_.name.toString)
+
+  final val NAME = BEDColumns(3)
+  final val SCORE = BEDColumns(4)
+  final val THICK_START = BEDColumns(6)
+  final val THICK_END = BEDColumns(7)
+  final val ITEM_RGB = BEDColumns(8)
+  final val BLOCK_COUNT = BEDColumns(9)
+  final val BLOCK_SIZES = BEDColumns(10)
+  final val BLOCK_STARTS = BEDColumns(11)
+
+
+
 
 
 }
