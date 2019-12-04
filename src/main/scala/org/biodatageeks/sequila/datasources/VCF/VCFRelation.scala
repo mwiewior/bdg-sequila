@@ -4,7 +4,10 @@ import org.apache.spark.internal.Logging
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{DataFrame, Row, SQLContext, SparkSession}
 import org.apache.spark.sql.sources._
-import org.biodatageeks.sequila.utils.Columns
+import org.biodatageeks.sequila.utils.{Columns, DataQualityFuncs}
+import org.apache.spark.sql.functions._
+
+
 
 
 class VCFRelation(path: String)(@transient val sqlContext: SQLContext) extends BaseRelation
@@ -14,16 +17,21 @@ class VCFRelation(path: String)(@transient val sqlContext: SQLContext) extends B
 
   val spark: SparkSession = sqlContext.sparkSession
 
+  val cleanContigUDF = udf[String,String](DataQualityFuncs.cleanContig)
 
-  lazy val df: DataFrame =  spark.read
-    .format("com.lifeomic.variants")
-    .option("use.format.type", "false")
+  lazy val inputDf: DataFrame =  spark
+    .read
+    .format("vcf")
+    .option("splitToBiallelic", "true")
     .load(path)
-    .withColumnRenamed("sampleid", Columns.SAMPLE)
-    .withColumnRenamed("chrom", Columns.CONTIG)
+    .withColumnRenamed("contigName", Columns.CONTIG)
+    .withColumnRenamed("start", Columns.START)
+    .withColumnRenamed("end", Columns.END)
+    .withColumnRenamed("referenceAllele", Columns.REF)
+    .withColumnRenamed("alternateAlleles", Columns.ALT)
 
-
-
+  lazy val df = inputDf
+    .withColumn(Columns.CONTIG, cleanContigUDF(inputDf(Columns.CONTIG)))
 
   override def schema: org.apache.spark.sql.types.StructType = {
    df.schema

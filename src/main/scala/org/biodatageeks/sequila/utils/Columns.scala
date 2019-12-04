@@ -60,6 +60,10 @@ object Columns {
   final val BLOCK_STARTS = BEDColumns(11)
 
 
+  final val REF = "ref"
+  final val ALT = "alt"
+
+
 
 
 
