@@ -1,5 +1,6 @@
 package org.biodatageeks.sequila.datasources.VCF
 
+import io.projectglow.Glow
 import org.apache.spark.internal.Logging
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{DataFrame, Row, SQLContext, SparkSession}
@@ -10,28 +11,39 @@ import org.apache.spark.sql.functions._
 
 
 
-class VCFRelation(path: String)(@transient val sqlContext: SQLContext) extends BaseRelation
+class VCFRelation(path: String,
+                  normalization_mode: Option[String] = None,
+                  ref_genome_path : Option[String] = None )(@transient val sqlContext: SQLContext) extends BaseRelation
   with PrunedScan
   with Serializable
-  with Logging{
+  with Logging {
 
   val spark: SparkSession = sqlContext.sparkSession
 
-  val cleanContigUDF = udf[String,String](DataQualityFuncs.cleanContig)
+  val cleanContigUDF = udf[String, String](DataQualityFuncs.cleanContig)
 
-  lazy val inputDf: DataFrame =  spark
+  lazy val inputDf: DataFrame = spark
     .read
     .format("vcf")
     .option("splitToBiallelic", "true")
     .load(path)
-    .withColumnRenamed("contigName", Columns.CONTIG)
+  lazy val dfNormalized = {
+    normalization_mode match {
+    case Some(m) => {
+      if (m.equalsIgnoreCase("normalize") || m.equalsIgnoreCase("split_and_normalize")
+        && ref_genome_path == None) throw new Exception(s"Variant normalization mode specified but ref_genome_path is empty ")
+      Glow.transform(m.toLowerCase(), inputDf, Map("reference_genome_path" -> ref_genome_path.get))
+    }
+    case _ => inputDf
+    }
+  }.withColumnRenamed("contigName", Columns.CONTIG)
     .withColumnRenamed("start", Columns.START)
     .withColumnRenamed("end", Columns.END)
     .withColumnRenamed("referenceAllele", Columns.REF)
     .withColumnRenamed("alternateAlleles", Columns.ALT)
 
-  lazy val df = inputDf
-    .withColumn(Columns.CONTIG, cleanContigUDF(inputDf(Columns.CONTIG)))
+  lazy val df = dfNormalized
+    .withColumn(Columns.CONTIG, cleanContigUDF(dfNormalized(Columns.CONTIG)))
 
   override def schema: org.apache.spark.sql.types.StructType = {
    df.schema
