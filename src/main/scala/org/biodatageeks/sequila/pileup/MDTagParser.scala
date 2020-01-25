@@ -18,15 +18,9 @@ case class MDOperator(length: Int, base: Char) //S means to skip n positions, no
 object MDTagParser extends BDGAlignFileReaderWriter[BAMBDGInputFormat]{
 
   val logger: Logger = Logger.getLogger(this.getClass.getCanonicalName)
+  final val fasta = new IndexedFastaSequenceFile(new File("/Users/marek/data/Homo_sapiens_assembly18.fasta"))
 
-  val sparkSession = SparkSession
-      .builder()
-      .master("local[1]")
-      .getOrCreate()
-  val sqlSession = sparkSession.sqlContext
-  val bamRecords = readBAMFile(sqlSession,"/Users/marek/git/forks/bdg-sequila/src/test/resources/NA12878.slice.md.bam")
 
-  val fasta = new IndexedFastaSequenceFile(new File("/Users/marek/data/Homo_sapiens_assembly18.fasta"))
 
   private def getReferenceFromRead(r: SAMRecord) ={
     logger.debug(s"Processing read: ${r.getReadName}")
@@ -41,7 +35,6 @@ object MDTagParser extends BDGAlignFileReaderWriter[BAMBDGInputFormat]{
     var ind = 0
     logger.debug(s"Read has ${alignmentBlocks.size()} aligment blocks to process")
     for(b <- alignmentBlocks.asScala){
-//      val b = alignmentBlocks.next()
       val contig = r.getContig
       val refStart = b.getReferenceStart
       val refEnd = b.getReferenceStart + b.getLength - 1
@@ -60,8 +53,11 @@ object MDTagParser extends BDGAlignFileReaderWriter[BAMBDGInputFormat]{
     val cigarElements = cigar.getCigarElements
     //fast if matches return seq, both MD and cigar is one block
     if(mdTag.matches(onlyDigits)
-      && cigarElements.size() == 1 && cigarElements.get(0).getOperator ==  CigarOperator.MATCH_OR_MISMATCH )
+      && cigarElements.size() == 1 && cigarElements.get(0).getOperator ==  CigarOperator.MATCH_OR_MISMATCH ) {
+      logger.debug(s"Seq aft: ${seq}")
       seq
+    }
+
     //fixing SNPs, cigar is one block size
     else if (cigarElements.size() == 1 && cigarElements.get(0).getOperator ==  CigarOperator.MATCH_OR_MISMATCH) {
 
@@ -79,14 +75,18 @@ object MDTagParser extends BDGAlignFileReaderWriter[BAMBDGInputFormat]{
       val cigarElements = cigar.getCigarElements
       var ind = 0
       var cigarInd = 0
-      while(ind <= blockNum &&  blockNum > 0){
+      var insertInd = 0
+      while(ind <= blockNum){
         val cigarElement = cigarElements.get(cigarInd)
         val cigarOp = cigarElement.getOperator
         if(cigarOp == CigarOperator.MATCH_OR_MISMATCH ){
           ind += 1
         }
-        if(cigarOp == CigarOperator.MATCH_OR_MISMATCH || cigarOp == CigarOperator.INSERTION) {
+        if(cigarOp == CigarOperator.MATCH_OR_MISMATCH || cigarOp == CigarOperator.INSERTION || cigarOp == CigarOperator.SOFT_CLIP) {
           startPos += cigarElement.getLength
+        }
+        if(cigarOp == CigarOperator.INSERTION || cigarOp == CigarOperator.SOFT_CLIP) {
+          insertInd += cigarElement.getLength
         }
         cigarInd += 1
       }
@@ -95,7 +95,7 @@ object MDTagParser extends BDGAlignFileReaderWriter[BAMBDGInputFormat]{
         startPos = startPos - cigarElements.get(cigarInd).getLength
       }
       val blockLength =  cigarElements.get(cigarInd).getLength
-      val seqFixed = applyMDTag(seq, mdOperators, startPos, blockLength)
+      val seqFixed = applyMDTag(seq, mdOperators, startPos, blockLength, insertInd)
       logger.debug(s"Seq aft: ${seqFixed}")
       seqFixed
     }
@@ -121,22 +121,29 @@ object MDTagParser extends BDGAlignFileReaderWriter[BAMBDGInputFormat]{
     ab.toIterator
   }
 
-  private def applyMDTag(s: String,t: Iterator[MDOperator], pShift: Int = 0, blockLength: Int) = {
+  private def applyMDTag(s: String,t: Iterator[MDOperator], pShift: Int = 0, blockLength: Int, inserts: Int = 0) = {
     logger.debug(s"Starting applying MD op at pos: ${pShift} with block length: ${blockLength}")
     val seqFixed = StringBuilder.newBuilder
     var ind = 0
+    var  isFirstOpInBlock = true
     while (t.hasNext) {
       val op = t.next()
-      if(ind <= blockLength) {
-        logger.debug(s"Applying MD op: ${op.toString}")
+      logger.debug(s"Applying MD op: ${op.toString}, ${ind}")
+      if(ind < blockLength + pShift) {
         if(op.base == 'S' ) {
-          val seqToAppend = s.substring(  if(ind <= pShift)  pShift + ind else ind , ind + math.min(op.length, blockLength-ind) )
+          logger.debug(s"Index: ${ind}, inserts:  ${inserts}, blockLen:  ${blockLength}")
+          val startPos =   { if(isFirstOpInBlock) pShift else 0 } + ind
+          val shift  = {if (op.length - pShift + inserts >  blockLength) blockLength else  op.length - { if(isFirstOpInBlock) pShift - inserts else 0  }  }
+          val endPos =  startPos + shift
+          val seqToAppend = s.substring(  startPos , endPos )
           seqFixed.append(seqToAppend)
-          if(ind <= pShift) ind += op.length - pShift
-          else ind += op.length
+          logger.debug(s"Append seq length: ${seqToAppend.length} by skipping with ${seqToAppend}, start: ${startPos}, end: ${endPos}")
+          ind = endPos
+          isFirstOpInBlock = false
         }
         else if(op.base != 'S' && ind >= pShift){
           seqFixed.append(op.base.toString)
+          logger.debug(s"Append seq length: 1, at pos ${ind} with base ${op.base.toString}")
           ind += 1
         }
       }
@@ -153,14 +160,17 @@ object MDTagParser extends BDGAlignFileReaderWriter[BAMBDGInputFormat]{
   }
 
   def main(args: Array[String]): Unit = {
+    val sparkSession = SparkSession
+      .builder()
+      .master("local[1]")
+      .getOrCreate()
+    val sqlSession = sparkSession.sqlContext
+    val bamRecords = readBAMFile(sqlSession,"/Users/marek/git/forks/bdg-sequila/src/test/resources/NA12878.slice.md.bam")
 
-    val records = bamRecords
-      .collect()
-//      .filter(r => r.getAttribute("MD") == "71a0a1c0")
-      .iterator
-    while (records.hasNext){
-      val r = records.next()
-      getReferenceFromRead(r)
+    sparkSession.time{
+      val records = bamRecords
+        .map(getReferenceFromRead(_))
+        .count()
     }
 
 
