@@ -7,12 +7,10 @@ import htsjdk.samtools.{AlignmentBlock, BAMRecord, Cigar, CigarOperator, SAMReco
 import org.apache.log4j.Logger
 import org.apache.spark.sql.SparkSession
 import org.biodatageeks.sequila.datasources.BAM.BDGAlignFileReaderWriter
-import org.biodatageeks.sequila.pileup.MDTagParser.compareToRefSeq
 import org.seqdoop.hadoop_bam.BAMBDGInputFormat
 
 import scala.collection.mutable.ArrayBuffer
 import collection.JavaConverters._
-
 import util.control.Breaks._
 
 case class MDOperator(length: Int, base: Char) //S means to skip n positions, not fix needed
@@ -21,6 +19,7 @@ object MDTagParser extends BDGAlignFileReaderWriter[BAMBDGInputFormat]{
 
   val logger: Logger = Logger.getLogger(this.getClass.getCanonicalName)
   final val fasta = new IndexedFastaSequenceFile(new File("/Users/marek/data/hs37d5.fa"))
+//  val fasta = new IndexedFastaSequenceFile(new File("/Users/marek/data/Homo_sapiens_assembly18.fasta"))
 
 
 
@@ -155,7 +154,7 @@ object MDTagParser extends BDGAlignFileReaderWriter[BAMBDGInputFormat]{
     logger.debug(s"Starting applying MD op at pos: ${pShift} with block length: ${blockLength}")
     val seqFixed = StringBuilder.newBuilder
     var ind = 0
-    var  isFirstOpInBlock = true
+    var isFirstOpInBlock = true
     while (t.hasNext) {
       val op = t.next()
       logger.debug(s"Applying MD op: ${op.toString}, ${ind}")
@@ -165,15 +164,19 @@ object MDTagParser extends BDGAlignFileReaderWriter[BAMBDGInputFormat]{
           val startPos =   { if(isFirstOpInBlock) pShift else 0 } + ind
           val shift  = {if (op.length - pShift + inserts >  blockLength) blockLength else  op.length - { if(isFirstOpInBlock) pShift - inserts else 0  }  }
           val endPos =  startPos + shift
-          val seqToAppend = s.substring(  startPos , endPos )
-          seqFixed.append(seqToAppend)
-          logger.debug(s"Append seq length: ${seqToAppend.length} by skipping with ${seqToAppend}, start: ${startPos}, end: ${endPos}")
+          if(endPos > pShift){
+            val seqToAppend = s.substring(  startPos , endPos )
+            seqFixed.append(seqToAppend)
+            logger.debug(s"Append seq length: ${seqToAppend.length} by skipping with ${seqToAppend}, start: ${startPos}, end: ${endPos}")
+          }
           ind = endPos
           isFirstOpInBlock = false
         }
-        else if(op.base != 'S' && ind >= pShift){
-          seqFixed.append(op.base.toUpper.toString)
-          logger.debug(s"Append seq length: 1, at pos ${ind} with base ${op.base.toString}")
+        else if(op.base != 'S' ){ //current block
+          if(ind >= pShift){
+            seqFixed.append(op.base.toUpper.toString)
+            logger.debug(s"Append seq length: 1, at pos ${ind} with base ${op.base.toString}")
+          }
           if (op.base.isUpper) ind += 1
         }
       }
@@ -197,10 +200,15 @@ object MDTagParser extends BDGAlignFileReaderWriter[BAMBDGInputFormat]{
     sparkSession.sparkContext.setLogLevel("INFO")
     val sqlSession = sparkSession.sqlContext
     val bamRecords = readBAMFile(sqlSession,"/Users/marek/data/NA12878.chrom20.ILLUMINA.bwa.CEU.low_coverage.20121211.bam")
+//    val bamRecords = readBAMFile(sqlSession,"/Users/marek/git/forks/bdg-sequila/src/test/resources/NA12878.slice.md.bam")
+
+
 
     sparkSession.time{
       val records = bamRecords
     //      .filter(_.getReadName=="SRR622461.74266492")
+//          .filter(_.getReadName=="SRR622461.74266917")
+
         .map(getReferenceFromRead(_))
         .count()
     }
