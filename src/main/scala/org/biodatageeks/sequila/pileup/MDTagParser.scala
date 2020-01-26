@@ -170,6 +170,7 @@ object MDTagParser extends BDGAlignFileReaderWriter[BAMBDGInputFormat]{
             val seqToAppend = s.substring(  startPosTrim , endPos )
             seqFixed.append(seqToAppend)
             logger.debug(s"Append seq length: ${seqToAppend.length} by skipping with ${seqToAppend}, start: ${startPosTrim}, end: ${endPos}")
+            remaingBlockLength -= seqToAppend.length
           }
           ind = endPos
           isFirstOpInBlock = false
