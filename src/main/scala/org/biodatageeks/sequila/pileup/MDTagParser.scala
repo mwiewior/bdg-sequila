@@ -45,7 +45,7 @@ object MDTagParser extends BDGAlignFileReaderWriter[BAMBDGInputFormat]{
             while(cigar.hasNext && alignBlockCnt <= ind){
               val el = cigar.next()
               if(el.getOperator == CigarOperator.MATCH_OR_MISMATCH)  alignBlockCnt += 1
-              else if(el.getOperator == CigarOperator.DELETION) delCnt += el.getLength
+              else if(el.getOperator == CigarOperator.DELETION && alignBlockCnt == ind) delCnt += el.getLength
             }
             delCnt
           }
@@ -216,6 +216,7 @@ object MDTagParser extends BDGAlignFileReaderWriter[BAMBDGInputFormat]{
     //      .filter(_.getReadName=="SRR622461.74266492")
 //          .filter(_.getReadName=="SRR622461.74266917")
 //          .filter(_.getReadName=="SRR622461.74268065")
+          .filter(_.getReadName=="SRR622461.74274597")
 
         .map(getReferenceFromRead(_))
         .count()
