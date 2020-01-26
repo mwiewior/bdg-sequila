@@ -154,20 +154,22 @@ object MDTagParser extends BDGAlignFileReaderWriter[BAMBDGInputFormat]{
     logger.debug(s"Starting applying MD op at pos: ${pShift} with block length: ${blockLength}")
     val seqFixed = StringBuilder.newBuilder
     var ind = 0
+    var  remaingBlockLength = blockLength
     var isFirstOpInBlock = true
     while (t.hasNext) {
       val op = t.next()
       logger.debug(s"Applying MD op: ${op.toString}, ${ind}")
       if(ind < blockLength + pShift) {
         if(op.base == 'S' ) {
-          logger.info(s"Index: ${ind}, inserts:  ${inserts}, blockLen:  ${blockLength}")
+          logger.info(s"Index: ${ind}, inserts:  ${inserts}, blockLen:  ${remaingBlockLength}")
           val startPos =   { if(isFirstOpInBlock) pShift else 0 } + ind
-          val shift  = {if (op.length - pShift + inserts >  blockLength) blockLength else  op.length - { if(isFirstOpInBlock) pShift - inserts else 0  }  }
+          val shift  = {if (op.length - pShift + inserts >  remaingBlockLength) remaingBlockLength  else  op.length - { if(isFirstOpInBlock) pShift - inserts else 0  }  }
           val endPos =  startPos + shift
           if(endPos > pShift){
-            val seqToAppend = s.substring(  startPos , endPos )
+            val startPosTrim = if(startPos < pShift) pShift else startPos
+            val seqToAppend = s.substring(  startPosTrim , endPos )
             seqFixed.append(seqToAppend)
-            logger.debug(s"Append seq length: ${seqToAppend.length} by skipping with ${seqToAppend}, start: ${startPos}, end: ${endPos}")
+            logger.debug(s"Append seq length: ${seqToAppend.length} by skipping with ${seqToAppend}, start: ${startPosTrim}, end: ${endPos}")
           }
           ind = endPos
           isFirstOpInBlock = false
@@ -176,8 +178,12 @@ object MDTagParser extends BDGAlignFileReaderWriter[BAMBDGInputFormat]{
           if(ind >= pShift){
             seqFixed.append(op.base.toUpper.toString)
             logger.debug(s"Append seq length: 1, at pos ${ind} with base ${op.base.toString}")
+            if (op.base.isUpper) remaingBlockLength -= 1
           }
-          if (op.base.isUpper) ind += 1
+          if (op.base.isUpper) {
+            ind += 1
+
+          }
         }
       }
       else ind += op.length
@@ -208,6 +214,7 @@ object MDTagParser extends BDGAlignFileReaderWriter[BAMBDGInputFormat]{
       val records = bamRecords
     //      .filter(_.getReadName=="SRR622461.74266492")
 //          .filter(_.getReadName=="SRR622461.74266917")
+//          .filter(_.getReadName=="SRR622461.74268065")
 
         .map(getReferenceFromRead(_))
         .count()
