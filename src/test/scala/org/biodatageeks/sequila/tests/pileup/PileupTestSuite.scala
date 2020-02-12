@@ -31,4 +31,8 @@ class PileupTestSuite extends BAMBaseTestSuite with SharedSparkContext{
       .show(5,false)
   }
 
+  test("Check"){
+
+  }
+
 }

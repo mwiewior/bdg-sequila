@@ -22,7 +22,7 @@ object SequilaRegister {
     spark
       .sparkContext
       .hadoopConfiguration
-      .setInt("mapred.max.split.size", spark.sqlContext.getConf(InternalParams.InputSplitSize,"134217728").toInt)
+      .setInt("mapred.max.split.size", spark.sqlContext.getConf(InternalParams.InpxutSplitSize,"134217728").toInt)
 
     spark
       .sqlContext
