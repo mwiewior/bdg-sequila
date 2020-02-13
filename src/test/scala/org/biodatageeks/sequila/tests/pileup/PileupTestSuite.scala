@@ -18,7 +18,7 @@ class PileupTestSuite extends BAMBaseTestSuite with SharedSparkContext {
        """.stripMargin
     val result = ss.sql(query)
     result.show(5,false)
-    assert(result.count() == 3172)
+    assert(result.count() == 2899)
     assert(result.head.getString(0) == "1")
 
   }
