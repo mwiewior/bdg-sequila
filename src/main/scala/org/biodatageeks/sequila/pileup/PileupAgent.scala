@@ -6,7 +6,7 @@ import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.catalyst.expressions.Attribute
 
 
-case class PileupRecord (contig: String, pos: Int, ref: String, cov: Int)
+case class PileupRecord (contig: String, pos: Int, ref: String, cov: Short, countRef:Short, countNonRef:Short)
 
 
 class PileupAgent(spark:SparkSession) {
@@ -16,7 +16,7 @@ class PileupAgent(spark:SparkSession) {
     logger.info(s"Calculating pileup on table: $tableName")
     // dummy implementation
     val rdd = spark.sparkContext.parallelize(Seq(1,2,3,4,5,6,7,8,9,10))
-    val out = rdd.map(r=>PileupRecord("1", r, "A", (r + 10).toShort ))
+    val out = rdd.map(r=>PileupRecord("1", r, "A", (r + 10).toShort, (r + 9).toShort, (r + 1).toShort ))
     out
   }
 

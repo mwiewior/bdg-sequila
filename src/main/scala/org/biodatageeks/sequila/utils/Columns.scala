@@ -29,6 +29,8 @@ object Columns {
   final val SAMRECORD = "SAMRecord"
   final val STRAND = "strand"
   final val COVERAGE= "coverage"
+  final val COUNT_REF="countRef"
+  final val COUNT_NONREF="countNonRef"
 
   private val sequencedFragmentColumns = ScalaFuncs
     .classAccessors[SequencedFragment]

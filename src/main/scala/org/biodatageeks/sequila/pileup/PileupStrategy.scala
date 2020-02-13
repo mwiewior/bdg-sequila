@@ -54,7 +54,7 @@ case class PileupPlan [T<:BDGAlignInputFormat](plan:LogicalPlan, spark:SparkSess
                 UTF8String.fromString(r.contig),
                 r.pos,
                 UTF8String.fromString(r.ref),
-                r.cov.toShort)))
+                r.cov, r.countRef, r.countNonRef)))
                 }
           })
         }

@@ -212,7 +212,10 @@ object PileupTemplate {
       StructField(Columns.CONTIG,StringType,nullable = true),
       StructField(Columns.POS,IntegerType,nullable = false),
       StructField(Columns.REF,StringType,nullable = false),
-      StructField(Columns.COVERAGE,ShortType,nullable = false))).toAttributes
+      StructField(Columns.COVERAGE,ShortType,nullable = false),
+      StructField(Columns.COUNT_REF,ShortType,nullable = false),
+      StructField(Columns.COUNT_NONREF,ShortType,nullable = false)
+    )).toAttributes
 
     new PileupTemplate(tableName, output)
   }
