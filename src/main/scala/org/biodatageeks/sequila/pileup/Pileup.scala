@@ -28,7 +28,7 @@ class Pileup[T<:BDGAlignInputFormat](spark:SparkSession)(implicit c: ClassTag[T]
 
     val alignments = filterAlignments(allAlignments)
 
-    val out = PileupMethods.calculatePileupMock(alignments)
+    val out = PileupMethods.calculatePileup(alignments)
     out
   }
 
