@@ -41,7 +41,7 @@ case class PileupPlan [T<:BDGAlignInputFormat](plan:LogicalPlan, spark:SparkSess
   override def children: Seq[SparkPlan] = Nil
 
   override protected def doExecute(): RDD[InternalRow] = {
-    val out = new PileupAgent(spark).calculatePileup(tableName, output)
+    val out = new Pileup(spark).handlePileup(tableName, output)
     projectOutput(out)
   }
 
