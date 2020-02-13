@@ -28,7 +28,7 @@ class Pileup[T<:BDGAlignInputFormat](spark:SparkSession)(implicit c: ClassTag[T]
 
     val alignments = filterAlignments(allAlignments)
 
-    val out = calculatePileup(alignments)
+    val out = PileupMethods.calculatePileupMock(alignments)
     out
   }
 
@@ -43,20 +43,6 @@ class Pileup[T<:BDGAlignInputFormat](spark:SparkSession)(implicit c: ClassTag[T]
 
   }
 
-  private def calculatePileup(alignments:RDD[SAMRecord]): RDD[PileupRecord] = {
-
-    // dummy implementation v 0.1
-    //    val rdd = spark.sparkContext.parallelize(Seq(1, 2, 3, 4, 5, 6, 7, 8, 9, 10))
-    //    val out = rdd.map(r => PileupRecord("1", r, "A", (r + 10).toShort, (r + 9).toShort, (r + 1).toShort))
-
-    // dummy implementation v 0.2
-
-    alignments.map(read => PileupRecord(
-      DataQualityFuncs.cleanContig(read.getContig),
-      read.getAlignmentStart,
-      read.getReadString()(0).toString,
-      10.toShort, 8.toShort, 2.toShort))
-  }
 
 
   private def readTableFile(name: String): RDD[SAMRecord] = {
