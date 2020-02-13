@@ -3,36 +3,23 @@ package org.biodatageeks.sequila.tests.pileup
 import com.holdenkarau.spark.testing.SharedSparkContext
 import org.apache.spark.sql.SequilaSession
 import org.biodatageeks.sequila.tests.base.BAMBaseTestSuite
-import org.biodatageeks.sequila.utils.{Columns, SequilaRegister}
+import org.biodatageeks.sequila.utils.SequilaRegister
 
-class PileupTestSuite extends BAMBaseTestSuite with SharedSparkContext{
+class PileupTestSuite extends BAMBaseTestSuite with SharedSparkContext {
 
-  test("MD Tags"){
+  test("Pileup mock"){
     val  ss = SequilaSession(spark)
     SequilaRegister.register(ss)
+    ss.sparkContext.setLogLevel("INFO")
     val query =
       s"""
-         |SELECT count(*),tag_MD
-         |FROM  $tableNameBAM group by tag_MD order by count(*) desc
-         |
+         |SELECT *
+         |FROM  pileup('$tableNameBAM')
        """.stripMargin
-    ss
-      .sql(query)
-      .show(5,false)
-
-    val query2 =
-      s"""
-         |SELECT count(tag_MD)
-         |FROM  $tableNameBAM where tag_MD not rlike '^[0-9]*$$' and tag_md is not null
-         |
-       """.stripMargin
-    ss
-      .sql(query2)
-      .show(5,false)
-  }
-
-  test("Check"){
+    val result = ss.sql(query)
+    result.show(5,false)
+    assert(result.count() == 10)
+    assert(result.head.getString(0) == "1")
 
   }
-
 }

@@ -5,6 +5,7 @@ import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.execution.datasources.SequilaDataSourceStrategy
 import org.biodatageeks.sequila.utvf.GenomicIntervalStrategy
 import org.biodatageeks.sequila.coverage.CoverageStrategy
+import org.biodatageeks.sequila.pileup.PileupStrategy
 import org.biodatageeks.sequila.rangejoins.IntervalTree.IntervalTreeJoinStrategyOptim
 
 object SequilaRegister {
@@ -15,6 +16,7 @@ object SequilaRegister {
         new SequilaDataSourceStrategy(spark),
         new IntervalTreeJoinStrategyOptim(spark),
         new CoverageStrategy(spark),
+        new PileupStrategy(spark),
         new GenomicIntervalStrategy(spark)
 
       )
@@ -22,7 +24,7 @@ object SequilaRegister {
     spark
       .sparkContext
       .hadoopConfiguration
-      .setInt("mapred.max.split.size", spark.sqlContext.getConf(InternalParams.InpxutSplitSize,"134217728").toInt)
+      .setInt("mapred.max.split.size", spark.sqlContext.getConf(InternalParams.InputSplitSize,"134217728").toInt)
 
     spark
       .sqlContext
