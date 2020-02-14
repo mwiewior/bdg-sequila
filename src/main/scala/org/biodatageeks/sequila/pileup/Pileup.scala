@@ -14,8 +14,6 @@ import org.seqdoop.hadoop_bam.CRAMBDGInputFormat
 import scala.reflect.ClassTag
 
 
-
-
 class Pileup[T<:BDGAlignInputFormat](spark:SparkSession)(implicit c: ClassTag[T]) extends BDGAlignFileReaderWriter[T] {
   val logger: Logger = Logger.getLogger(this.getClass.getCanonicalName)
 
@@ -23,14 +21,12 @@ class Pileup[T<:BDGAlignInputFormat](spark:SparkSession)(implicit c: ClassTag[T]
     logger.info(s"Calculating pileup on table: $tableName")
 
     lazy val allAlignments = readTableFile(name=tableName)
-    logger.info(s"Processing ${allAlignments.count()} reads in total" )
+    logger.info("Processing ${allAlignments.count()} reads in total" )
 
     val alignments = filterAlignments(allAlignments)
 
-    val out = PileupMethods.calculatePileup(alignments)
-    out
+    PileupMethods.calculatePileup(alignments)
   }
-
 
   private def filterAlignments(alignments:RDD[SAMRecord]): RDD[SAMRecord] = {
     // any other filtering conditions should go here
@@ -41,8 +37,6 @@ class Pileup[T<:BDGAlignInputFormat](spark:SparkSession)(implicit c: ClassTag[T]
 
 
   }
-
-
 
   private def readTableFile(name: String): RDD[SAMRecord] = {
     val metadata = TableFuncs.getTableMetadata(spark, name)
