@@ -14,7 +14,6 @@ import org.seqdoop.hadoop_bam.CRAMBDGInputFormat
 import scala.reflect.ClassTag
 
 
-case class PileupRecord (contig: String, pos: Int, ref: String, cov: Short, countRef:Short, countNonRef:Short)
 
 
 class Pileup[T<:BDGAlignInputFormat](spark:SparkSession)(implicit c: ClassTag[T]) extends BDGAlignFileReaderWriter[T] {
