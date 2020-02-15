@@ -16,7 +16,7 @@ import util.control.Breaks._
 
 case class MDOperator(length: Int, base: Char) //S means to skip n positions, not fix needed
 case class RefDiff(contig: String,  pos:Int, diff: Array[Char]) //start position and difference - length = 1 SNP, length > 1 Insertion :FIXME use byte array instead os str for performance
-
+case class PartialReffDiff(diff : Array[RefDiff], leftOver: Int)
 object MDTagParser extends BDGAlignFileReaderWriter[BAMBDGInputFormat]{
 
   val logger: Logger = Logger.getLogger(this.getClass.getCanonicalName)
@@ -41,7 +41,7 @@ object MDTagParser extends BDGAlignFileReaderWriter[BAMBDGInputFormat]{
       val alignmentBlocks = r.getAlignmentBlocks
 //      logger.debug(s"Read has ${alignmentBlocks.size()} aligment blocks to process")
       var ind = 0
-      var leftOver =  0
+      val leftOver =  0
       val mdOperators = parseMDTag(r.getAttribute("MD").toString, pattern)
       if (alignmentBlocks !=  null  && alignmentBlocks.size() > 0){
         for(b <- alignmentBlocks.asScala){
@@ -56,15 +56,15 @@ object MDTagParser extends BDGAlignFileReaderWriter[BAMBDGInputFormat]{
               }
               delCnt
             }
-            val contig = r.getContig
-            val refStart = b.getReferenceStart - deletions
-            val refEnd = b.getReferenceStart + b.getLength - 1
+//            val contig = r.getContig
+//            val refStart = b.getReferenceStart - deletions
+//            val refEnd = b.getReferenceStart + b.getLength - 1
 
 
 //              val result  =  getRef(r.getReadString, r.getCigar, r.getAttribute("MD").toString, ind, leftOver, mdOperators)
                val result  =  getRefDiff(r.getReadString, r.getContig, r.getCigar, ind, leftOver, mdOperators, r.getStart + deletions)
               //val reconstructedSeq =  result._1
-              if(!result._1.isEmpty) diffs ++= result._1
+              if(result.diff != null) diffs ++= result.diff
               //            //          val isEqual
           //            = compareToRefSeq(reconstructedSeq, contig, refStart, refEnd)
               //            //          logger.debug(s"Comparing to ref ${isEqual.toString.toUpperCase}")
@@ -79,12 +79,12 @@ object MDTagParser extends BDGAlignFileReaderWriter[BAMBDGInputFormat]{
   diffs.toArray
   }
 
-  private def getRefDiff(seq: String, contig: String, cigar: Cigar, blockNum: Int = 0, leftOver:Int = 0, mdOperators:Array[MDOperator], refStart: Int): (Array[RefDiff], Int) = {
+  private def getRefDiff(seq: String, contig: String, cigar: Cigar, blockNum: Int = 0, leftOver:Int = 0, mdOperators:Array[MDOperator], refStart: Int): PartialReffDiff = {
     val cigarElements = cigar.getCigarElements
     //fast if matches return seq, both MD and cigar is one block
     if(mdOperators.length == 1
       && cigarElements.size() == 1 && cigarElements.get(0).getOperator ==  CigarOperator.MATCH_OR_MISMATCH ) {
-      (Array.empty[RefDiff], -1)
+      PartialReffDiff(null, -1)
     }
 
     //fixing SNPs, cigar is one block size
@@ -286,7 +286,7 @@ object MDTagParser extends BDGAlignFileReaderWriter[BAMBDGInputFormat]{
   }
 
 
-  private def applyMDTagDiff( s: String, contig:String, t: Array[MDOperator], pShift: Int = 0, blockLength: Int, inserts: Int = 0, lo:  Int, refStart: Int):(Array[RefDiff], Int) = {
+  private def applyMDTagDiff( s: String, contig:String, t: Array[MDOperator], pShift: Int = 0, blockLength: Int, inserts: Int = 0, lo:  Int, refStart: Int):PartialReffDiff = {
 //    logger.debug(s"Starting applying MD op at pos: ${pShift} with block length: ${blockLength}")
     val diff = new ArrayBuffer[RefDiff]()
     var ind = pShift
@@ -352,7 +352,7 @@ object MDTagParser extends BDGAlignFileReaderWriter[BAMBDGInputFormat]{
       }
       i += 1
     }
-    (diff.toArray, leftOver)
+    PartialReffDiff(diff.toArray, leftOver)
   }
 
 
