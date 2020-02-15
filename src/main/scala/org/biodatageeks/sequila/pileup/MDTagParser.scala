@@ -12,6 +12,7 @@ import org.apache.log4j.Logger
 import scala.collection.mutable.ArrayBuffer
 import collection.JavaConverters._
 import scala.util.matching.Regex
+import util.control.Breaks._
 
 case class MDOperator(length: Int, base: Char) //S means to skip n positions, not fix needed
 case class RefDiff(contig: String,  pos:Int, diff: Array[Char]) //start position and difference - length = 1 SNP, length > 1 Insertion :FIXME use byte array instead os str for performance
@@ -184,11 +185,12 @@ object MDTagParser extends BDGAlignFileReaderWriter[BAMBDGInputFormat]{
 
   def parseMDTag(t : String, pattern: Regex) = {
 //    logger.debug(s"Parsing MD tag: ${t}")
-    val ab = new ArrayBuffer[MDOperator]()
-    if (isAllDigits(t)) ab.append(MDOperator(t.toInt, 'S') )
-    else {
-//      val pattern = "([0-9]+)\\^?([A-Za-z]+)?".r
 
+    if (isAllDigits(t)) {
+      Array[MDOperator](MDOperator(t.toInt, 'S'))
+    }
+    else {
+      val ab = new ArrayBuffer[MDOperator]()
       val matches = pattern
         .findAllIn(t)
       while (matches.hasNext) {
@@ -209,8 +211,9 @@ object MDTagParser extends BDGAlignFileReaderWriter[BAMBDGInputFormat]{
         }
         else ab.append(MDOperator(m.toInt, 'S') )
       }
+      ab.toArray
     }
-    ab.toArray
+
   }
 
   private def applyMDTag(s: String,t: Array[MDOperator], pShift: Int = 0, blockLength: Int, inserts: Int = 0, lo:  Int) = {
@@ -365,10 +368,11 @@ object MDTagParser extends BDGAlignFileReaderWriter[BAMBDGInputFormat]{
     var numDigits = 0
     val len = s.length
     var i = 0
-    while(i < len){
-      if(s(i).isDigit) numDigits += 1
-      i += 1
-    }
+      while(i < len){
+        if(s(i).isDigit) numDigits += 1
+        else return false
+        i += 1
+      }
     if(numDigits == len) true else false
   }
   def main(args: Array[String]): Unit = {
@@ -378,8 +382,8 @@ object MDTagParser extends BDGAlignFileReaderWriter[BAMBDGInputFormat]{
       .getOrCreate()
     sparkSession.sparkContext.setLogLevel("INFO")
     val sqlSession = sparkSession.sqlContext
-    val bamRecords = readBAMFile(sqlSession,"/Users/marek/data/NA12878.chrom20.ILLUMINA.bwa.CEU.low_coverage.20121211.md.bam")
-//    val bamRecords = readBAMFile(sqlSession,"/Users/marek/data/NA12878.proper.wes.md.bam")
+//    val bamRecords = readBAMFile(sqlSession,"/Users/marek/data/NA12878.chrom20.ILLUMINA.bwa.CEU.low_coverage.20121211.md.bam")
+    val bamRecords = readBAMFile(sqlSession,"/Users/marek/data/NA12878.proper.wes.md.bam")
 //    val bamRecords = readBAMFile(sqlSession,"/Users/marek/git/forks/bdg-sequila/src/test/resources/NA12878.slice.md.bam")
 
 //      val fasta = new IndexedFastaSequenceFile(new File("/Users/marek/data/hs37d5.fa"))
@@ -415,12 +419,8 @@ object MDTagParser extends BDGAlignFileReaderWriter[BAMBDGInputFormat]{
 //             ||  r.getReadName=="SRR622461.74274709"
 //          )
 
-//        .map(getRefDiffFromRead(_))
-          .filter(_.getAttribute("MD") != null)
-          .map(_.getAttribute("MD").toString)
-        .coalesce(1)
-        .saveAsTextFile("/tmp/md_tags.txt")
-          //.count()
+        .map(getRefDiffFromRead(_))
+          .count()
 
 //        println(records.first().mkString("|"))
       logger.info(s"Total records processed: ${records}")
