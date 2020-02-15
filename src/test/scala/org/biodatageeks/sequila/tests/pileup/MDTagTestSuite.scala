@@ -17,10 +17,11 @@ class MDTagTestSuite extends BAMBaseTestSuite with SharedSparkContext{
       .sparkContext
       .textFile(mgTagPath)
         .collect()
+    val pattern = "([0-9]+)\\^?([A-Za-z]+)?".r
 
     th.pbench(
     tags
-      .map(MDTagParser.parseMDTag(_)))
+      .map(MDTagParser.parseMDTag(_,pattern)))
 
   }
 
