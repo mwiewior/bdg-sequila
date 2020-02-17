@@ -15,7 +15,6 @@ import scala.collection.{JavaConverters, mutable}
   */
 object PileupMethods {
 
-//  val logger: Logger = Logger.getLogger(this.getClass.getCanonicalName)
   val logger = LoggerFactory.getLogger(this.getClass.getCanonicalName)
 
   /**
@@ -37,7 +36,9 @@ object PileupMethods {
   def calculatePileup(alignments:RDD[SAMRecord]):RDD[PileupRecord] = {
 
     val contigLenMap = initContigLengths(alignments.first())
-    collectEvents(alignments, contigLenMap)
+    val output = collectEvents(alignments, contigLenMap)
+
+    logger.debug("Events count: {}", output.count())
 
     calculatePileupMock(alignments)
   }
@@ -53,6 +54,7 @@ object PileupMethods {
       val aggMap =  new mutable.HashMap[String, ContigEventAggregate]()
       val contigStartStopPartMap = new mutable.HashMap[String, Int]()
       val cigarMap = new mutable.HashMap[String, Int]()
+
 
       while (partition.hasNext) {
         val read = partition.next()
@@ -99,6 +101,6 @@ object PileupMethods {
     val contig = DataQualityFuncs.cleanContig(read.getContig)
     val contigLen = contigLenMap(contig)
     val arrayLen = contigLen - read.getStart + 10
-    ContigEventAggregate(contig, contigLen, new Array[Short](arrayLen), contigLen-1)
+    ContigEventAggregate(contig, contigLen, new Array[Short](arrayLen), read.getStart, contigLen-1)
   }
 }

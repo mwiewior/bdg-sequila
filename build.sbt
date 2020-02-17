@@ -38,6 +38,9 @@ libraryDependencies += "org.bdgenomics.adam" %% "adam-cli-spark2" % "0.25.0"
 libraryDependencies += "org.scala-lang" % "scala-library" % "2.11.8"
 libraryDependencies += "org.rogach" %% "scallop" % "3.1.2"
 
+libraryDependencies += "org.apache.logging.log4j" % "log4j-slf4j-impl" % "2.11.1"
+
+
 
 libraryDependencies += "org.hammerlab.bdg-utils" %% "cli" % "0.3.0"
 
