@@ -27,7 +27,7 @@ class PileupStrategy (spark:SparkSession) extends Strategy with Serializable {
             else if (f == InputDataType.CRAMInputDataType)
               PileupPlan[CRAMBDGInputFormat](plan, spark, tableName, output) :: Nil
             else Nil
-          case None => throw new RuntimeException("Only BAM and CRAM file formats are supported in bdg_coverage.")
+          case None => throw new RuntimeException("Only BAM and CRAM file formats are supported in pileup function.")
         }
       case _ => Nil
     }

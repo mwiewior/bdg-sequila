@@ -2,6 +2,7 @@ package org.biodatageeks.sequila.pileup
 
 import htsjdk.samtools.SAMRecord
 import org.apache.log4j.Logger
+import org.slf4j.LoggerFactory
 import org.apache.spark.rdd.RDD
 import org.biodatageeks.sequila.utils.DataQualityFuncs
 import scala.collection.{JavaConverters, mutable}
@@ -14,7 +15,8 @@ import scala.collection.{JavaConverters, mutable}
   */
 object PileupMethods {
 
-  val logger: Logger = Logger.getLogger(this.getClass.getCanonicalName)
+//  val logger: Logger = Logger.getLogger(this.getClass.getCanonicalName)
+  val logger = LoggerFactory.getLogger(this.getClass.getCanonicalName)
 
   /**
     * mock implementation of pileup
