@@ -4,9 +4,7 @@ import htsjdk.samtools.{CigarOperator, SAMRecord}
 import org.slf4j.LoggerFactory
 import org.apache.spark.rdd.RDD
 import org.biodatageeks.sequila.utils.DataQualityFuncs
-
 import scala.collection.{JavaConverters, mutable}
-
 
 
 /**
@@ -36,7 +34,6 @@ object PileupMethods {
 
     val contigLenMap = initContigLengths(alignments.first())
     val output = collectEvents(alignments, contigLenMap)
-
     logger.debug("Events count: {}", output.count())
 
     calculatePileupMock(alignments)
@@ -120,23 +117,6 @@ object PileupMethods {
     updateMaxReadLenInContig(read, contig, contigMaxReadLen)
   }
 
-
-  /**
-    * finds index of last non-zero element in array
-    * @param array array of events
-    * @return index of last non-zero element
-    */
-  private def findMaxIndex(array: Array[Int]): Int = {
-    var i = array.length - 1
-
-    while (i > 0) {
-      if (array(i) != 0)
-        return i
-      i -= 1
-    }
-    return 0
-  }
-
   /**
     * transforms map structure of contigEventAggregates, by reducing number of last zeroes in the cov array
     * also adds calculated maxCigar len to output
@@ -149,8 +129,7 @@ object PileupMethods {
       val contig = r._1
       val contigEventAgg = r._2
 
-      val maxIndex = findMaxIndex(contigEventAgg.cov) //TODO doublecheck the function
-
+      val maxIndex: Int = contigEventAgg.cov.lastIndexWhere(x => x != 0)
       (contig, ContigEventAggregate(
         contig,
         contigEventAgg.contigLen,
