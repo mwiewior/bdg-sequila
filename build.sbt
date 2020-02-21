@@ -70,6 +70,7 @@ libraryDependencies += "org.disq-bio" % "disq" % "0.3.3"
 
 
 libraryDependencies += "io.projectglow" %% "glow" % "0.1.2"
+libraryDependencies += "com.github.ichoran" %% "thyme" % "0.1.2-SNAPSHOT"
 
 avroSpecificSourceDirectories in Compile += (sourceDirectory in Compile).value / "avro/input"
 avroSpecificSourceDirectories in Test += (sourceDirectory in Test).value / "avro"
@@ -115,7 +116,9 @@ resolvers ++= Seq(
   "zsibio-snapshots" at "http://zsibio.ii.pw.edu.pl/nexus/repository/maven-snapshots/",
   "spring" at "http://repo.spring.io/libs-milestone/",
   "Cloudera" at "https://repository.cloudera.com/content/repositories/releases/",
-  "Hortonworks" at "http://repo.hortonworks.com/content/repositories/releases/"
+  "Hortonworks" at "http://repo.hortonworks.com/content/repositories/releases/",
+  "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots"
+
 )
 
 //logLevel in assembly := Level.Debug
