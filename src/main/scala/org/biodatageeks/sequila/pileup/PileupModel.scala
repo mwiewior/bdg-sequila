@@ -28,5 +28,5 @@ case class ContigEventAggregate (
                                   cov: Array[Short]= Array(0),
                                   startPosition: Int = 0,
                                   maxPosition: Int = 0,
-                                  maxCigar:Int = 0
+                                  maxSeqLen:Int = 0
                                 )

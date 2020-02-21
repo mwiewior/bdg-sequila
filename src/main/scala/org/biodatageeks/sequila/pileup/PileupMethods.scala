@@ -32,8 +32,8 @@ object PileupMethods {
     */
   def calculatePileup(alignments:RDD[SAMRecord]):RDD[PileupRecord] = {
 
-    val contigLenMap = initContigLengths(alignments.first())
-    val output = collectEvents(alignments, contigLenMap)
+
+    val output = collectEvents(alignments)
     logger.debug("Events count: {}", output.count())
 
     calculatePileupMock(alignments)
@@ -43,28 +43,24 @@ object PileupMethods {
     * Collects "interesting" (read start, stop, ref/nonref counting) events on alignments
     *
     * @param alignments aligned reads
-    * @param contigLenMap mapper between contig name and its length
     * @return distributed collection of PileupRecords
     */
-  def collectEvents(alignments:RDD[SAMRecord], contigLenMap: Map[String, Int]): RDD[ContigEventAggregate] = {
+  def collectEvents(alignments:RDD[SAMRecord]): RDD[ContigEventAggregate] = {
+    val contigLenMap = initContigLengths(alignments.first())
+
     alignments.mapPartitions{partition =>
       val aggMap =  new mutable.HashMap[String, ContigEventAggregate]()
-      val contigStartPart = new mutable.HashMap[String, Int]()
       val contigMaxReadLen = new mutable.HashMap[String, Int]()
 
       while (partition.hasNext) {
         val read = partition.next()
         val contig = DataQualityFuncs.cleanContig(read.getContig)
 
-        // the first read from contig -> add new aggregate structure to map
-        if (!aggMap.contains(contig)) {
-          aggMap += contig -> initContigEventsAggregate(read, contigLenMap)
-          contigStartPart += contig -> read.getStart
-          contigMaxReadLen += contig -> 0
-        }
-        val contigPartitionStart = contigStartPart(contig)
+        if (!aggMap.contains(contig))
+          handleFirstReadForContigInPartition(read, contig, contigLenMap, contigMaxReadLen, aggMap)
+
         val contigEventAggregate = aggMap(contig)
-        analyzeRead (read, contig, contigPartitionStart, contigEventAggregate, contigMaxReadLen)
+        analyzeRead (read, contig, contigEventAggregate, contigMaxReadLen)
       }
       lazy val output = prepareOutputAggregates (aggMap, contigMaxReadLen)
       output.toMap.values.iterator
@@ -72,8 +68,24 @@ object PileupMethods {
 
   }
 
+  private def handleFirstReadForContigInPartition(read: SAMRecord, contig: String, contigLenMap: Map[String, Int], contigMaxReadLen: mutable.HashMap[String, Int], aggMap: mutable.HashMap[String, ContigEventAggregate]) = {
+    val contigLen = contigLenMap(contig)
+    val arrayLen = contigLen - read.getStart + 10
+
+    val contigEventAggregate = ContigEventAggregate (
+      contig = contig,
+      contigLen = contigLen,
+      cov = new Array[Short](arrayLen),
+      startPosition = read.getStart,
+      maxPosition = contigLen - 1 )
+
+    aggMap += contig -> contigEventAggregate
+    contigMaxReadLen += contig -> 0
+  }
+
   /**
     * simply updates the map between contig and max read length (for overlaps). If current read len is greater update map
+    *
     * @param read analyzed aligned read from partition
     * @param contig read contig (cleaned)
     * @param contigMaxReadLen map between contig and max read length
@@ -89,12 +101,12 @@ object PileupMethods {
     * updates events array for contig and updates contig's max read length
     * @param read analyzed aligned read from partition
     * @param contig read contig (cleaned)
-    * @param partitionStart current starting position for the contig in this partition
     * @param eventAggregate object holding current state of events aggregate in this contig
     * @param contigMaxReadLen map between contig and max read length (for overlaps)
     */
-  def analyzeRead(read: SAMRecord, contig:String, partitionStart:Int, eventAggregate: ContigEventAggregate, contigMaxReadLen: mutable.HashMap[String, Int]): Unit = {
+  def analyzeRead(read: SAMRecord, contig:String, eventAggregate: ContigEventAggregate, contigMaxReadLen: mutable.HashMap[String, Int]): Unit = {
 
+    val partitionStart=eventAggregate.startPosition
     var position = read.getStart
     val cigarIterator = read.getCigar.iterator()
 
@@ -181,16 +193,4 @@ object PileupMethods {
     contigLenMap.toMap
   }
 
-  /**
-    * initializes aggregate structure
-    * @param read - single aligned read (first in contig)
-    * @param contigLenMap - mapper between contig name and length
-    * @return
-    */
-  def initContigEventsAggregate(read: SAMRecord, contigLenMap: Map[String, Int]): ContigEventAggregate ={
-    val contig = DataQualityFuncs.cleanContig(read.getContig)
-    val contigLen = contigLenMap(contig)
-    val arrayLen = contigLen - read.getStart + 10
-    ContigEventAggregate(contig, contigLen, new Array[Short](arrayLen), read.getStart, contigLen-1)
-  }
 }
