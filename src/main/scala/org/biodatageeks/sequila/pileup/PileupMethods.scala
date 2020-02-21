@@ -141,7 +141,7 @@ object PileupMethods {
       val contig = r._1
       val contigEventAgg = r._2
 
-      val maxIndex: Int = contigEventAgg.cov.lastIndexWhere(x => x != 0)
+      val maxIndex: Int = findMaxIndex(contigEventAgg.cov)
       (contig, ContigEventAggregate(
         contig,
         contigEventAgg.contigLen,
@@ -191,6 +191,17 @@ object PileupMethods {
       contigLenMap += contigName -> sequence.getSequenceLength
     }
     contigLenMap.toMap
+  }
+
+  def findMaxIndex(array: Array[Short]): Int = {
+    var i = array.length - 1
+
+    while (i > 0) {
+      if (array(i) != 0)
+        return i
+      i -= 1
+    }
+    return -1
   }
 
 }
