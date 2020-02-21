@@ -53,7 +53,7 @@ object PileupMethods {
     alignments.mapPartitions{partition =>
       val aggMap =  new mutable.HashMap[String, ContigEventAggregate]()
       val contigStartPart = new mutable.HashMap[String, Int]()
-      val cigarMap = new mutable.HashMap[String, Int]()
+      val contigMaxReadLen = new mutable.HashMap[String, Int]()
 
       while (partition.hasNext) {
         val read = partition.next()
@@ -63,38 +63,48 @@ object PileupMethods {
         if (!aggMap.contains(contig)) {
           aggMap += contig -> initContigEventsAggregate(read, contigLenMap)
           contigStartPart += contig -> read.getStart
-          cigarMap += contig -> 0
+          contigMaxReadLen += contig -> 0
         }
         val contigPartitionStart = contigStartPart(contig)
         val contigEventAggregate = aggMap(contig)
-        analyzeCigar (read, contig, contigPartitionStart, contigEventAggregate, cigarMap)
+        analyzeRead (read, contig, contigPartitionStart, contigEventAggregate, contigMaxReadLen)
       }
-      lazy val output = prepareOutputAggregates (aggMap, cigarMap)
+      lazy val output = prepareOutputAggregates (aggMap, contigMaxReadLen)
       output.toMap.values.iterator
     }
 
   }
 
-  @inline def updateCigarLength(cigarLength: Int, cigarOp:CigarOperator, cigarOpLength: Int): Int = {
-    if (cigarOp == CigarOperator.M || cigarOp == CigarOperator.X || cigarOp == CigarOperator.EQ || cigarOp == CigarOperator.N || cigarOp == CigarOperator.D)
-      cigarLength + cigarOpLength
-    else
-      cigarLength
-
+  /**
+    * simply updates the map between contig and max read length (for overlaps). If current read len is greater update map
+    * @param read analyzed aligned read from partition
+    * @param contig read contig (cleaned)
+    * @param contigMaxReadLen map between contig and max read length
+    */
+  @inline
+  private def updateMaxReadLenInContig(read: SAMRecord, contig: String, contigMaxReadLen: mutable.HashMap[String, Int]): Unit = {
+    val seqLen = read.getReadLength
+    if (seqLen > contigMaxReadLen(contig))
+      contigMaxReadLen(contig) = seqLen
   }
 
-  def analyzeCigar(read: SAMRecord, contig:String, partitionStart:Int, eventAggregate: ContigEventAggregate, cigarMap: mutable.HashMap[String, Int]) = {
+  /**
+    * updates events array for contig and updates contig's max read length
+    * @param read analyzed aligned read from partition
+    * @param contig read contig (cleaned)
+    * @param partitionStart current starting position for the contig in this partition
+    * @param eventAggregate object holding current state of events aggregate in this contig
+    * @param contigMaxReadLen map between contig and max read length (for overlaps)
+    */
+  def analyzeRead(read: SAMRecord, contig:String, partitionStart:Int, eventAggregate: ContigEventAggregate, contigMaxReadLen: mutable.HashMap[String, Int]): Unit = {
 
     var position = read.getStart
     val cigarIterator = read.getCigar.iterator()
 
-    var readCigarLen = 0
     while (cigarIterator.hasNext) {
       val cigarElement = cigarIterator.next()
       val cigarOpLength = cigarElement.getLength
       val cigarOp = cigarElement.getOperator
-
-      readCigarLen = updateCigarLength(readCigarLen, cigarOp, cigarOpLength)
 
       // update events array according to read alignment blocks start/end
       if (cigarOp == CigarOperator.M || cigarOp == CigarOperator.X || cigarOp == CigarOperator.EQ) {
@@ -105,17 +115,18 @@ object PileupMethods {
       else if (cigarOp == CigarOperator.N || cigarOp == CigarOperator.D)
         position += cigarOpLength
     }
-    if (readCigarLen > cigarMap(contig))
-      cigarMap(contig) = readCigarLen
+
+    // seq len is not equal to cigar len (typically longer, because of clips, but the value is ready to use, doesn't nedd to be computed)
+    updateMaxReadLenInContig(read, contig, contigMaxReadLen)
   }
 
 
   /**
     * finds index of last non-zero element in array
-    * @param array
-    * @return index
+    * @param array array of events
+    * @return index of last non-zero element
     */
-  private def findMaxIndex(array: Array[Short]): Int = {
+  private def findMaxIndex(array: Array[Int]): Int = {
     var i = array.length - 1
 
     while (i > 0) {
