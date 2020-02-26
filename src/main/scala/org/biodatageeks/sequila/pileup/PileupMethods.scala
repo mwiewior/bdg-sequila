@@ -6,8 +6,8 @@ import org.slf4j.{Logger, LoggerFactory}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.storage.StorageLevel
-import org.biodatageeks.sequila.pileup.model.{ContigEventAggregate, ContigRange, GenericPileupRecord, PileupAccumulator, PileupRecord, PileupUpdate, TailEdge, UpdateStruct}
-import org.biodatageeks.sequila.utils.{DataQualityFuncs, InternalParams}
+import org.biodatageeks.sequila.pileup.model.{ContigEventAggregate, ContigRange, PileupAccumulator, PileupRecord, PileupUpdate, TailEdge, UpdateStruct}
+import org.biodatageeks.sequila.utils.DataQualityFuncs
 
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.{JavaConverters, mutable}

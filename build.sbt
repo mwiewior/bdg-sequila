@@ -88,8 +88,8 @@ avroSpecificScalaSource in Test := new java.io.File("src/test/org/biodatageeks/f
 
 
 
-fork := false
-fork in Test := false
+fork := true
+fork in Test := true
 
 //parallelExecution in Test := false
 //javaOptions in Test += "-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=9999"
