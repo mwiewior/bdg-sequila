@@ -210,7 +210,7 @@ object PileupTemplate {
 
     val output = StructType(Seq(
       StructField(Columns.CONTIG,StringType,nullable = true),
-      StructField(Columns.POS,IntegerType,nullable = false),
+      StructField(Columns.START,IntegerType,nullable = false),
       StructField(Columns.REF,StringType,nullable = false),
       StructField(Columns.COVERAGE,ShortType,nullable = false),
       StructField(Columns.COUNT_REF,ShortType,nullable = false),

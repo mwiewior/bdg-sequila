@@ -10,6 +10,7 @@ import org.apache.spark.unsafe.types.UTF8String
 import org.biodatageeks.sequila.datasources.BAM.BDGAlignFileReaderWriter
 import org.biodatageeks.sequila.datasources.InputDataType
 import org.biodatageeks.sequila.inputformats.BDGAlignInputFormat
+import org.biodatageeks.sequila.pileup.model.PileupRecord
 import org.biodatageeks.sequila.utils.TableFuncs
 import org.seqdoop.hadoop_bam.{BAMBDGInputFormat, CRAMBDGInputFormat}
 

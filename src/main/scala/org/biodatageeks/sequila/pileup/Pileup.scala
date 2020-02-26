@@ -7,10 +7,10 @@ import org.apache.spark.sql.catalyst.expressions.Attribute
 import org.biodatageeks.sequila.datasources.BAM.BDGAlignFileReaderWriter
 import org.biodatageeks.sequila.datasources.InputDataType
 import org.biodatageeks.sequila.inputformats.BDGAlignInputFormat
+import org.biodatageeks.sequila.pileup.model.PileupRecord
 import org.biodatageeks.sequila.utils.{DataQualityFuncs, InternalParams, TableFuncs}
 import org.seqdoop.hadoop_bam.CRAMBDGInputFormat
 import org.slf4j.LoggerFactory
-
 
 import scala.reflect.ClassTag
 
@@ -26,7 +26,8 @@ class Pileup[T<:BDGAlignInputFormat](spark:SparkSession)(implicit c: ClassTag[T]
 
     val alignments = filterAlignments(allAlignments)
 
-    PileupMethods.calculatePileup(alignments)
+    PileupMethods.calculatePileup(alignments, spark)
+
   }
 
   private def filterAlignments(alignments:RDD[SAMRecord]): RDD[SAMRecord] = {

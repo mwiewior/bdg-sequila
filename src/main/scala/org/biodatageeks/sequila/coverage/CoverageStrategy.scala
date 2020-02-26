@@ -70,7 +70,6 @@ case class BDGCoveragePlan [T<:BDGAlignInputFormat](plan: LogicalPlan, spark: Sp
     val sampleTable = TableFuncs
       .getTableMetadata(spark,table)
 
-    //TODO reduntant check?
     val fileExtension = sampleTable.provider match{
       case Some(f) =>
         if (f == InputDataType.BAMInputDataType) "bam"
