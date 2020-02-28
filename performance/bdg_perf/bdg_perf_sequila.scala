@@ -1,5 +1,5 @@
 import org.apache.spark.sql.SequilaSession
-import org.biodatageeks.sequila.utils.{SequilaRegister, UDFRegister}
+import org.biodatageeks.sequila.utils.{Columns, SequilaRegister, UDFRegister}
 import org.biodatageeks.BDGPerf
 import org.biodatageeks.BDGPerf.{BDGPerfRunner, BDGQuery, BDGTestParams}
 
@@ -43,20 +43,20 @@ ss.sql(s"""
 ss.sqlContext.setConf("spark.biodatageeks.bam.predicatePushdown","true")
 
 val queries = Array(
-  BDGQuery("bdg_seq_count_NA12878",s"SELECT COUNT(*) FROM ${bamTable} WHERE sampleId='NA12878'"),
-  BDGQuery("bdg_seq_filter_NA12878",s"SELECT COUNT(*) FROM ${bamTable} WHERE sampleId='NA12878' and contigName='chr8' AND start>100000 AND end<110000"),
+  BDGQuery("bdg_seq_count_NA12878",s"SELECT COUNT(*) FROM ${bamTable} WHERE ${Columns.SAMPLE}='NA12878'"),
+  BDGQuery("bdg_seq_filter_NA12878",s"SELECT COUNT(*) FROM ${bamTable} WHERE ${Columns.SAMPLE}='NA12878' and ${Columns.CONTIG}='chr8' AND ${Columns.START}>100000 AND ${Columns.END}<110000"),
   BDGQuery("bdg_cov_count_NA12878_BAM",s"SELECT COUNT(*) FROM bdg_coverage ('${bamTable}','NA12878', 'blocks')"),
   BDGQuery("bdg_cov_count_NA12878_CRAM",s"SELECT COUNT(*) FROM bdg_coverage ('${cramTable}','NA12878', 'blocks')"),
   BDGQuery("bdg_seq_int_join_NA12878",
     s"""
-      |SELECT targets.contigName,targets.start,targets.end,count(*) FROM ${bamTable} JOIN targets
-      |     ON (targets.contigName=${bamTable}.contigName
+      |SELECT targets.${Columns.CONTIG},targets.${Columns.START},targets.${Columns.END},count(*) FROM ${bamTable} JOIN targets
+      |     ON (targets.${Columns.CONTIG}=${bamTable}.${Columns.CONTIG}
       |     AND
-      |     CAST(${bamTable}.end AS INTEGER)>=CAST(targets.start AS INTEGER)
+      |     CAST(${bamTable}.${Columns.END} AS INTEGER)>=CAST(targets.${Columns.START} AS INTEGER)
       |     AND
-      |     CAST(${bamTable}.start AS INTEGER)<=CAST(targets.end AS INTEGER)
+      |     CAST(${bamTable}.${Columns.START} AS INTEGER)<=CAST(targets.${Columns.END} AS INTEGER)
       |     )
-      |     GROUP BY targets.contigName,targets.start,targets.end
+      |     GROUP BY targets.${Columns.CONTIG},targets.${Columns.START},targets.${Columns.END}
     """.stripMargin),
   BDGQuery("bdg_cov_window_fix_length_500_count_NA12878_BAM",s"SELECT COUNT(*) FROM bdg_coverage ('${bamTable}','NA12878', 'bases','500')"),
   BDGQuery("bdg_cov_window_fix_length_500_count_NA12878_CRAM",s"SELECT COUNT(*) FROM bdg_coverage ('${cramTable}','NA12878', 'bases','500')"),
