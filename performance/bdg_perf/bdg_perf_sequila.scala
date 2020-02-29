@@ -36,7 +36,7 @@ OPTIONS(path '${CRAM_DIR}')""")
 //targets
 val  bedPath="/data/granges/tgp_exome_hg18.bed"
 ss.sql(s"""
-             |CREATE TABLE IF NOT EXISTS targets(contigName String,start Integer,end Integer)
+             |CREATE TABLE IF NOT EXISTS targets(${Columns.CONTIG} String,${Columns.START} Integer,${Columns.END} Integer)
              |USING csv
              |OPTIONS (path "${bedPath}", delimiter "\t")""".stripMargin)
 
